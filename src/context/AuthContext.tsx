@@ -5,9 +5,11 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
   ReactNode,
 } from "react";
-import { api, setToken, getToken } from "@/lib/api";
+import { api, setToken } from "@/lib/api";
 
 interface User {
   id: number;
@@ -29,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const persistToken = (token: string | null) => {
+  const persistToken = useCallback((token: string | null) => {
     if (token) {
       localStorage.setItem("token", token);
       document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
@@ -37,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("token");
       document.cookie = "token=; path=/; max-age=0";
     }
-  };
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("token");
@@ -50,17 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [persistToken]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const res = await api.auth.login({ email, password });
     persistToken(res.access_token);
     setToken(res.access_token);
     const user = await api.auth.me();
     setUser(user);
-  };
+  }, [persistToken]);
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = useCallback(async (email: string, password: string, name: string) => {
     const res = await api.auth.register({
       email,
       password,
@@ -70,16 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     const user = await api.auth.me();
     setUser(user);
-  };
+  }, [persistToken]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     persistToken(null);
     setToken(null);
     setUser(null);
-  };
+  }, [persistToken]);
+
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout }),
+    [user, loading, login, register, logout]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

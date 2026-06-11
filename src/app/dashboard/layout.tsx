@@ -3,11 +3,13 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useEffect } from "react";
 
 const navItems = [
   { label: "Chat", href: "/dashboard/chat", icon: "💬" },
   { label: "Documentos", href: "/dashboard/documentos", icon: "📄" },
   { label: "Historial", href: "/dashboard/historial", icon: "📋" },
+  { label: "Pendientes", href: "/dashboard/pendientes", icon: "📌" },
 ];
 
 export default function DashboardLayout({
@@ -20,6 +22,12 @@ export default function DashboardLayout({
   const { user, logout, loading } = useAuth();
   const { dark, toggle } = useTheme();
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-zinc-400 dark:text-zinc-500">
@@ -29,7 +37,6 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    router.push("/login");
     return null;
   }
 

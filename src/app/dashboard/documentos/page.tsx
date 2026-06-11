@@ -56,7 +56,9 @@ export default function DocumentosPage() {
 
   const [uploadProgress, setUploadProgress] = useState<Progress | null>(null);
   const [uploadFilename, setUploadFilename] = useState("");
+  const [extractRefs, setExtractRefs] = useState(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadDocs = useCallback(async () => {
     try {
@@ -75,12 +77,14 @@ export default function DocumentosPage() {
 
   useEffect(() => {
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     };
   }, []);
 
   const startPolling = (docId: string) => {
     if (pollingRef.current) clearInterval(pollingRef.current);
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
 
     pollingRef.current = setInterval(async () => {
       try {
@@ -88,21 +92,20 @@ export default function DocumentosPage() {
         setUploadProgress(progress);
 
         if (progress.status === "ready" || progress.status === "error") {
-          if (pollingRef.current) clearInterval(pollingRef.current);
-          pollingRef.current = null;
+          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
           if (progress.status === "ready") {
-            setTimeout(() => {
+            timeoutRef.current = setTimeout(() => {
               setUploadProgress(null);
               setUploadFilename("");
               loadDocs();
+              timeoutRef.current = null;
             }, 1500);
           }
         }
       } catch {
-        if (pollingRef.current) clearInterval(pollingRef.current);
-        pollingRef.current = null;
+        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
       }
-    }, 500);
+    }, 3000);
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +117,7 @@ export default function DocumentosPage() {
     setUploadProgress({ status: "processing", stage: "starting", current: 0, total: 0, message: "Subiendo archivo...", pages: 0, chunks_found: 0, error: null });
 
     try {
-      const result = await api.documents.upload(file);
+      const result = await api.documents.upload(file, extractRefs);
       startPolling(result.id);
     } catch (err: any) {
       setError(err.message);
@@ -164,16 +167,28 @@ export default function DocumentosPage() {
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Documentos</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">Normativas aduaneras indexadas</p>
         </div>
-        <label className="cursor-pointer rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50">
-          {uploadProgress ? "Procesando..." : "Subir documento"}
-          <input
-            type="file"
-            accept=".pdf,.docx,.doc"
-            onChange={handleUpload}
-            className="hidden"
-            disabled={!!uploadProgress}
-          />
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={extractRefs}
+              onChange={(e) => setExtractRefs(e.target.checked)}
+              className="rounded border-zinc-300 dark:border-zinc-700"
+              disabled={!!uploadProgress}
+            />
+            Extraer referencias
+          </label>
+          <label className="cursor-pointer rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50">
+            {uploadProgress ? "Procesando..." : "Subir documento"}
+            <input
+              type="file"
+              accept=".pdf,.docx,.doc"
+              onChange={handleUpload}
+              className="hidden"
+              disabled={!!uploadProgress}
+            />
+          </label>
+        </div>
       </div>
 
       {error && (

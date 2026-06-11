@@ -61,9 +61,10 @@ export const api = {
   },
 
   documents: {
-    upload: (file: File) => {
+    upload: (file: File, extractReferences: boolean = true) => {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("extract_references", String(extractReferences));
 
       const headers: Record<string, string> = {};
       if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
@@ -113,5 +114,34 @@ export const api = {
     history: () => request<any[]>("/rag/history"),
 
     historyItem: (id: string) => request<any>(`/rag/history/${id}`),
+  },
+
+  pending: {
+    list: (sourceDocId?: string) =>
+      request<any[]>(`/pending/${sourceDocId ? `?source_doc_id=${sourceDocId}` : ""}`),
+
+    grouped: () =>
+      request<
+        {
+          ref_type: string;
+          ref_number: string;
+          ref_title: string;
+          relation: string;
+          resolved: boolean;
+          refs: {
+            ref_id: string;
+            chapter_title: string;
+            ref_article: string;
+            source_filename: string;
+          }[];
+          ref_ids: string[];
+        }[]
+      >("/pending/grouped"),
+
+    resolve: (refId: string, documentId: string | null) =>
+      request<{ status: string }>(`/pending/${refId}/resolve`, {
+        method: "PUT",
+        body: JSON.stringify({ document_id: documentId }),
+      }),
   },
 };

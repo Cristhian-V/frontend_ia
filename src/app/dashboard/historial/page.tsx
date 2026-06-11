@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
@@ -28,19 +28,21 @@ export default function HistorialPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = search.trim()
-    ? logs.filter(
-        (log) =>
-          log.query.toLowerCase().includes(search.toLowerCase()) ||
-          log.answer.toLowerCase().includes(search.toLowerCase())
-      )
-    : logs;
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return logs;
+    return logs.filter(
+      (log) =>
+        log.query.toLowerCase().includes(q) ||
+        log.answer.toLowerCase().includes(q)
+    );
+  }, [logs, search]);
 
-  const handleContinue = (id: string) => {
+  const handleContinue = useCallback((id: string) => {
     router.push(`/dashboard/chat?resume=${id}`);
-  };
+  }, [router]);
 
-  const highlight = (text: string, query: string) => {
+  const highlight = useCallback((text: string, query: string) => {
     if (!query.trim()) return text;
     const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const parts = text.split(new RegExp(`(${escaped})`, "gi"));
@@ -53,7 +55,7 @@ export default function HistorialPage() {
         p
       )
     );
-  };
+  }, []);
 
   return (
     <div>
