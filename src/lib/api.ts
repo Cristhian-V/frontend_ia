@@ -105,7 +105,7 @@ export const api = {
   },
 
   rag: {
-    query: (body: { query: string; top_k?: number }) =>
+    query: (body: { query: string; top_k?: number; response_mode?: string }) =>
       request<{ answer: string; chunks: any[]; model: string }>("/rag/query", {
         method: "POST",
         body: JSON.stringify(body),

@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface QueryLog {
   id: string;
@@ -128,9 +130,15 @@ export default function HistorialPage() {
 
               {expanded === log.id && (
                 <div className="border-t border-zinc-100 dark:border-zinc-800 px-4 py-3">
-                  <p className="whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300">
-                    {search.trim() ? highlight(log.answer, search) : log.answer}
-                  </p>
+                  <div className="whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300">
+                    {search.trim() ? (
+                      highlight(log.answer, search)
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{log.answer}</ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

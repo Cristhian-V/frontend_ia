@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   role: "user" | "assistant";
@@ -23,6 +25,7 @@ function ChatInner() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [resumeLoaded, setResumeLoaded] = useState(false);
+  const [responseMode, setResponseMode] = useState("simple");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,7 +55,7 @@ function ChatInner() {
     setLoading(true);
 
     try {
-      const res = await api.rag.query({ query });
+      const res = await api.rag.query({ query, response_mode: responseMode });
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: res.answer, chunks: res.chunks },
@@ -83,7 +86,30 @@ function ChatInner() {
             {resumeId ? "Conversacion reanudada" : "Consulta las normativas aduaneras"}
           </p>
         </div>
-        {resumeId && (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 p-0.5">
+            <button
+              onClick={() => setResponseMode("simple")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                responseMode === "simple"
+                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+            >
+              Simple
+            </button>
+            <button
+              onClick={() => setResponseMode("tecnica")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                responseMode === "tecnica"
+                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+            >
+              Técnica
+            </button>
+          </div>
+          {resumeId && (
           <button
             onClick={() => {
               setMessages([]);
@@ -95,7 +121,8 @@ function ChatInner() {
             Nueva consulta
           </button>
         )}
-      </div>
+          </div>
+        </div>
 
       <div className="flex-1 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
         {resumeId && !resumeLoaded ? (
@@ -116,7 +143,9 @@ function ChatInner() {
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200"
                 }`}
               >
-                <div className="whitespace-pre-wrap">{msg.content}</div>
+                <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                </div>
               </div>
               {msg.chunks && msg.chunks.length > 0 && (
                 <details className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
