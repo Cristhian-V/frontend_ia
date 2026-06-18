@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# F.A.R.O. — Frontend (Next.js)
 
-## Getting Started
+**Framework de Asistencia, Respuesta y Operaciones**
 
-First, run the development server:
+Interfaz de usuario de F.A.R.O. construida con Next.js 16, React 19 y Tailwind CSS v4. Consume dos backends: Python (RAG, documentos) y Node.js (auth, admin).
+
+## Stack
+
+- **Next.js 16.2.7** (Turbopack, App Router)
+- **React 19.2.4**
+- **Tailwind CSS v4** + `@tailwindcss/typography`
+- **TypeScript 5**
+- **react-markdown** + **remark-gfm** — render de respuestas RAG
+
+## Requisitos
+
+- Node.js 22+
+- Backend Python corriendo en `:8000`
+- Backend Node corriendo en `:4000`
+
+## Instalacion (dev)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd frontend
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuracion
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Crear `.env.local` en `frontend/`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_ADMIN_API_URL=http://localhost:4000
+```
 
-## Learn More
+> `NEXT_PUBLIC_API_URL` usa `??` (no `||`) — el string vacio es valido para same-origin en prod.
 
-To learn more about Next.js, take a look at the following resources:
+### Produccion (Docker)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+El `Dockerfile` recibe build args:
+- `NEXT_PUBLIC_API_URL` (default: `/cumbre-ia/api`)
+- `NEXT_PUBLIC_ADMIN_API_URL` (default: `/cumbre-ia/api`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+El reverse proxy (NPM) enruta `/cumbre-ia/api/admin/` al backend Node y `/cumbre-ia/api/` al backend Python.
 
-## Deploy on Vercel
+## Comandos
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Dev
+npm run dev
+# → http://localhost:3000/cumbre-ia/
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Build produccion
+npm run build
+
+# Start produccion
+npm start
+
+# TypeScript check
+npx tsc --noEmit
+
+# Lint
+npm run lint
+```
+
+## Estructura
+
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx              # Root layout (AuthProvider + ThemeProvider)
+│   │   ├── page.tsx                # Landing → redirect a /login o /dashboard
+│   │   ├── login/                  # Pagina de login
+│   │   ├── register/               # Pagina de registro
+│   │   └── dashboard/
+│   │       ├── layout.tsx          # Sidebar con accordion (filtrado por tools + roles)
+│   │       ├── chat/               # Chat RAG (simple/tecnica)
+│   │       ├── documentos/         # Upload + lista + chunks + progress stepper
+│   │       ├── historial/          # Historial de consultas (admin: todos)
+│   │       ├── pendientes/         # Referencias pendientes (vincular/desvincular cascade)
+│   │       ├── checklist/          # Checklist normativo (progress bars, filtros)
+│   │       └── configuraciones/    # Admin: CRUD usuarios + tools + roles
+│   ├── components/                 # UI reutilizable
+│   │   ├── ErrorBanner.tsx
+│   │   ├── EmptyState.tsx
+│   │   ├── PageHeader.tsx
+│   │   └── TextField.tsx
+│   ├── hooks/
+│   │   └── useUploadProgress.ts    # Hook de polling de upload
+│   ├── context/
+│   │   ├── AuthContext.tsx         # Auth state (login, register, logout)
+│   │   └── ThemeContext.tsx        # Dark/light mode
+│   ├── lib/
+│   │   ├── api.ts                  # API client (API_BASE + ADMIN_API_BASE)
+│   │   ├── tools.ts                # TOOL_KEYS, TOOL_LABELS, ROLE_LABELS, etc.
+│   │   └── types.ts                # Tipos compartidos: User, Doc, Progress, Chunk
+│   └── images/                     # Logos F.A.R.O.
+├── public/
+│   └── images/                     # Logos (light/dark variants)
+├── next.config.ts                  # basePath: "/cumbre-ia", trailingSlash: true
+├── Dockerfile
+└── package.json
+```
+
+## Roles y acceso al sidebar
+
+| Rol | Chat | Documentos | Historial | Pendientes | Checklist | Configuraciones |
+|---|---|---|---|---|---|---|
+| **consultor** | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| **gestor** | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ |
+| **admin** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+## Puertos
+
+| Entorno | Puerto |
+|---|---|
+| Dev | `3000` |
+| Prod (Docker) | `3001:3000` |
+
+## Notas Next.js 16 + Turbopack
+
+- `basePath: "/cumbre-ia"` en `next.config.ts` — los assets se sirven en `/_next/` (sin prefijo); el NPM proxy maneja el prefijo via rewrite.
+- `middleware.ts` deprecated en Next.js 16 — auth es client-side en `dashboard/layout.tsx`.
+- CPU spike al iniciar dev = stale `.next` cache → `Remove-Item -Recurse .next` y reiniciar.
