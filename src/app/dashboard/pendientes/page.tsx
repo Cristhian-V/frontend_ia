@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { RELATION_LABELS, TYPE_LABELS } from "@/lib/tools";
+import type { Doc } from "@/lib/types";
+import { EmptyState } from "@/components/EmptyState";
 
 interface SourceRef {
   ref_id: string;
   chapter_title: string;
   ref_article: string;
   source_filename: string;
+  chunk_text: string;
+  resolved: boolean;
 }
 
 interface PendingGroup {
@@ -20,33 +25,19 @@ interface PendingGroup {
   ref_ids: string[];
 }
 
-interface Doc {
-  id: string;
-  filename: string;
-}
-
-const RELATION_LABELS: Record<string, string> = {
-  deroga: "Deroga",
-  modifica: "Modifica",
-  referencia: "Referencia",
-  complementa: "Complementa",
-  base_legal: "Base legal",
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  resolucion: "Resolución",
-  circular: "Circular",
-  ley: "Ley",
-  decreto: "Decreto",
-  reglamento: "Reglamento",
-  otro: "Otro",
-};
-
 export default function PendientesPage() {
   const [groups, setGroups] = useState<PendingGroup[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [refExpanded, setRefExpanded] = useState<Set<string>>(new Set());
+  const [tab, setTab] = useState<"pending" | "resolved">("pending");
+
+  const toggleRefExpand = (refId: string) => {
+    const next = new Set(refExpanded);
+    if (next.has(refId)) next.delete(refId); else next.add(refId);
+    setRefExpanded(next);
+  };
 
   useEffect(() => {
     Promise.all([api.pending.grouped(), api.documents.list()])
@@ -58,6 +49,20 @@ export default function PendientesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const refresh = async () => {
+    const [g, d] = await Promise.all([api.pending.grouped(), api.documents.list()]);
+    setGroups(g);
+    setDocs(d);
+  };
+
+  const handleDeleteRef = async (refId: string) => {
+    if (!confirm("Eliminar esta referencia?")) return;
+    try {
+      await api.pending.delete(refId);
+      await refresh();
+    } catch {}
+  };
+
   const toggleGroup = (idx: number) => {
     const next = new Set(expanded);
     if (next.has(idx)) next.delete(idx);
@@ -65,10 +70,11 @@ export default function PendientesPage() {
     setExpanded(next);
   };
 
-  const handleResolveAll = async (refIds: string[], documentId: string | null) => {
-    await Promise.all(refIds.map((id) => api.pending.resolve(id, documentId)));
-    const newGroups = await api.pending.grouped();
-    setGroups(newGroups);
+  const handleResolve = async (refId: string, documentId: string | null, cascade: boolean = true) => {
+    try {
+      await api.pending.resolve(refId, documentId, cascade);
+      await refresh();
+    } catch {}
   };
 
   return (
@@ -80,18 +86,47 @@ export default function PendientesPage() {
         </p>
       </div>
 
+      <div className="mb-4 flex gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 p-0.5 w-fit">
+        <button
+          onClick={() => setTab("pending")}
+          className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+            tab === "pending"
+              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+          }`}
+        >
+          Pendientes
+        </button>
+        <button
+          onClick={() => setTab("resolved")}
+          className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+            tab === "resolved"
+              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+          }`}
+        >
+          Resueltas
+        </button>
+      </div>
+
       {loading ? (
         <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
-      ) : groups.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-12 text-center">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No hay documentos pendientes</p>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-            Al subir documentos se detectaran automaticamente las referencias
+      ) : (() => {
+        const filtered = groups.filter((g) => (tab === "pending" ? !g.resolved : g.resolved));
+        return filtered.length === 0 ? (
+        <EmptyState>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {tab === "pending" ? "No hay documentos pendientes" : "No hay referencias resueltas"}
           </p>
-        </div>
+          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+            {tab === "pending"
+              ? "Al subir documentos se detectaran automaticamente las referencias"
+              : "Las referencias vinculadas apareceran aqui"}
+          </p>
+        </EmptyState>
       ) : (
         <div className="space-y-3">
-          {groups.map((g, idx) => (
+          {filtered.map((g, idx) => (
             <div
               key={idx}
               className={`rounded-xl border bg-white dark:bg-zinc-900 ${
@@ -147,7 +182,7 @@ export default function PendientesPage() {
                     defaultValue=""
                     onChange={(e) => {
                       if (e.target.value) {
-                        handleResolveAll(g.ref_ids, e.target.value);
+                        handleResolve(g.ref_ids[0], e.target.value, true);
                         e.target.value = "";
                       }
                     }}
@@ -163,9 +198,9 @@ export default function PendientesPage() {
                 )}
                 {g.resolved && (
                   <button
-                    onClick={() => handleResolveAll(g.ref_ids, null)}
+                    onClick={() => handleResolve(g.ref_ids[0], null, true)}
                     className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mt-1"
-                    title="Desvincular todo"
+                    title="Desvincular todas las refs a esta ley"
                   >
                     ✕
                   </button>
@@ -177,26 +212,68 @@ export default function PendientesPage() {
                   {g.refs.map((ref, j) => (
                     <div
                       key={j}
-                      className="flex items-start gap-2 py-1.5 text-xs border-b border-zinc-50 dark:border-zinc-800 last:border-0"
+                      className="py-1.5 text-xs border-b border-zinc-50 dark:border-zinc-800 last:border-0"
                     >
-                      <span className="text-zinc-400 dark:text-zinc-500 shrink-0 mt-0.5">
-                        →
-                      </span>
-                      <div className="min-w-0">
-                        <span className="font-medium text-zinc-500 dark:text-zinc-400">
-                          {ref.source_filename}
+                      <div className="flex items-start gap-2">
+                        <span className="text-zinc-400 dark:text-zinc-500 shrink-0 mt-0.5">
+                          →
                         </span>
-                        <br />
-                        <span className="font-medium text-zinc-600 dark:text-zinc-300">
-                          {ref.chapter_title || "Articulo referenciado"}
-                        </span>
-                        {ref.ref_article && (
-                          <span className="text-zinc-400 dark:text-zinc-500">
-                            {" "}
-                            — {ref.ref_article}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-zinc-500 dark:text-zinc-400">
+                              {ref.source_filename}
+                            </span>
+                            <span
+                              className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                ref.resolved
+                                  ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300"
+                                  : "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300"
+                              }`}
+                            >
+                              {ref.resolved ? "✓" : "⏳"}
+                            </span>
+                          </div>
+                          <br />
+                          <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                            {ref.chapter_title || "Articulo referenciado"}
                           </span>
-                        )}
+                          {ref.ref_article && (
+                            <span className="text-zinc-400 dark:text-zinc-500">
+                              {" "}
+                              — {ref.ref_article}
+                            </span>
+                          )}
+                          {ref.chunk_text && ref.chunk_text.length > 50 && (
+                            <button
+                              onClick={() => toggleRefExpand(ref.ref_id)}
+                              className="ml-2 text-blue-500 dark:text-blue-400 hover:underline"
+                            >
+                              {refExpanded.has(ref.ref_id) ? "Ocultar" : "Ver chunk"}
+                            </button>
+                          )}
+                          {ref.resolved && (
+                            <button
+                              onClick={() => handleResolve(ref.ref_id, null, false)}
+                              className="ml-2 text-orange-400 dark:text-orange-500 hover:text-orange-600 dark:hover:text-orange-400"
+                              title="Desvincular solo esta referencia"
+                            >
+                              Desvincular
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteRef(ref.ref_id)}
+                            className="ml-2 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400"
+                            title="Eliminar referencia"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
+                      {refExpanded.has(ref.ref_id) && ref.chunk_text && (
+                        <div className="mt-1 ml-6 rounded bg-zinc-50 dark:bg-zinc-800 p-2 text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                          {ref.chunk_text}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -205,6 +282,7 @@ export default function PendientesPage() {
           ))}
         </div>
       )}
+      )()}
     </div>
   );
 }

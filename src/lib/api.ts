@@ -1,4 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
+
+import type { User, ToolEntry, Progress, Doc, Chunk } from "./types";
 
 let authToken: string | null = null;
 
@@ -6,13 +9,10 @@ export function setToken(token: string | null) {
   authToken = token;
 }
 
-export function getToken(): string | null {
-  return authToken;
-}
-
 async function request<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  base: string = API_BASE,
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -23,7 +23,7 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetch(`${base}${endpoint}`, {
     ...options,
     headers,
   });
@@ -55,9 +55,7 @@ export const api = {
       }),
 
     me: () =>
-      request<{ id: number; email: string; full_name: string }>("/auth/me"),
-
-    logout: () => setToken(null),
+      request<User>("/auth/me"),
   },
 
   documents: {
@@ -81,10 +79,10 @@ export const api = {
     },
 
     list: () =>
-      request<any[]>("/documents/"),
+      request<Doc[]>("/documents/"),
 
     chunks: (id: string) =>
-      request<{ id: string; chunk_index: number; text: string }[]>(
+      request<Chunk[]>(
         `/documents/${id}/chunks`
       ),
 
@@ -92,16 +90,7 @@ export const api = {
       request<void>(`/documents/${id}`, { method: "DELETE" }),
 
     progress: (id: string) =>
-      request<{
-        status: string;
-        stage: string;
-        current: number;
-        total: number;
-        message: string;
-        pages: number;
-        chunks_found: number;
-        error: string | null;
-      }>(`/documents/${id}/progress`),
+      request<Progress>(`/documents/${id}/progress`),
   },
 
   rag: {
@@ -113,13 +102,12 @@ export const api = {
 
     history: () => request<any[]>("/rag/history"),
 
+    historyAll: () => request<any[]>("/rag/history/all"),
+
     historyItem: (id: string) => request<any>(`/rag/history/${id}`),
   },
 
   pending: {
-    list: (sourceDocId?: string) =>
-      request<any[]>(`/pending/${sourceDocId ? `?source_doc_id=${sourceDocId}` : ""}`),
-
     grouped: () =>
       request<
         {
@@ -133,15 +121,74 @@ export const api = {
             chapter_title: string;
             ref_article: string;
             source_filename: string;
+            chunk_text: string;
+            resolved: boolean;
           }[];
           ref_ids: string[];
         }[]
       >("/pending/grouped"),
 
-    resolve: (refId: string, documentId: string | null) =>
+    resolve: (refId: string, documentId: string | null, cascade: boolean = true) =>
       request<{ status: string }>(`/pending/${refId}/resolve`, {
         method: "PUT",
-        body: JSON.stringify({ document_id: documentId }),
+        body: JSON.stringify({ document_id: documentId, cascade }),
       }),
+
+    delete: (refId: string) =>
+      request<void>(`/pending/${refId}`, { method: "DELETE" }),
+  },
+
+  admin: {
+    listUsers: () =>
+      request<User[]>("/admin/users", {}, ADMIN_API_BASE),
+
+    createUser: (body: {
+      email: string;
+      password: string;
+      full_name: string;
+      is_admin?: boolean;
+      tools?: ToolEntry[];
+    }) =>
+      request<{ id: number }>("/admin/users", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }, ADMIN_API_BASE),
+
+    updateUser: (
+      id: number,
+      body: {
+        full_name?: string;
+        password?: string;
+        is_admin?: boolean;
+        tools?: ToolEntry[];
+      }
+    ) =>
+      request<{ status: string }>(`/admin/users/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }, ADMIN_API_BASE),
+
+    deleteUser: (id: number) =>
+      request<void>(`/admin/users/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+  },
+
+  checklist: {
+    stats: () =>
+      request<{
+        total: number;
+        subidos: number;
+        porcentaje: number;
+        categorias: { categoria: string; total: number; subidos: number }[];
+      }>("/checklist/stats"),
+
+    list: (params?: { categoria?: string; subido?: boolean }) => {
+      const qs = new URLSearchParams();
+      if (params?.categoria) qs.set("categoria", params.categoria);
+      if (params?.subido !== undefined) qs.set("subido", String(params.subido));
+      const q = qs.toString();
+      return request<{ id: string; indice: string; categoria: string; codigo: string; subido: boolean }[]>(
+        `/checklist/${q ? `?${q}` : ""}`
+      );
+    },
   },
 };

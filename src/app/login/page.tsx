@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { dark } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -31,8 +33,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Cumbre IA</h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Normativas Aduaneras</p>
+          <img src={dark ? "/cumbre-ia/images/logologindosBlack.png" : "/cumbre-ia/images/logologindos.png"} alt="F.A.R.O." className="mx-auto h-80 w-auto mb-2" />
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">

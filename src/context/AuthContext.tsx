@@ -10,12 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { api, setToken } from "@/lib/api";
-
-interface User {
-  id: number;
-  email: string;
-  full_name: string;
-}
+import type { User } from "@/lib/types";
 
 interface AuthContextType {
   user: User | null;

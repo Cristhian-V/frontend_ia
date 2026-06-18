@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cumbre IA - RAG Aduanero",
-  description: "Sistema de consulta de normativas aduaneras con IA",
+  title: "F.A.R.O.",
+  description: "Framework de Asistencia, Respuesta y Operaciones",
 };
 
 export default function RootLayout({

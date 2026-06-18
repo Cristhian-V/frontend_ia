@@ -1,41 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
-
-interface Doc {
-  id: string;
-  original_filename: string;
-  chunks_count: number;
-  status: string;
-  created_at: string;
-}
-
-interface Chunk {
-  id: string;
-  chunk_index: number;
-  text: string;
-  chapter_title?: string;
-  page_start?: number;
-  page_end?: number;
-}
-
-interface Progress {
-  status: string;
-  stage: string;
-  current: number;
-  total: number;
-  message: string;
-  pages: number;
-  chunks_found: number;
-  error: string | null;
-}
+import type { Doc, Chunk } from "@/lib/types";
+import { useUploadProgress } from "@/hooks/useUploadProgress";
+import { PageHeader } from "@/components/PageHeader";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { EmptyState } from "@/components/EmptyState";
 
 const STAGES = [
   { key: "parsing", label: "Parseando PDF", icon: "🔍" },
-  { key: "windowing", label: "Creando ventanas", icon: "🪟" },
-  { key: "detecting", label: "Detectando capítulos", icon: "🤖" },
-  { key: "merging", label: "Merge y deduplicación", icon: "🔗" },
+  { key: "splitting", label: "Dividiendo articulos", icon: "✂️" },
+  { key: "detecting", label: "Detectando titulos", icon: "🤖" },
   { key: "embedding", label: "Generando embeddings", icon: "🧬" },
   { key: "storing", label: "Guardando en FAISS", icon: "💾" },
   { key: "done", label: "Completado", icon: "✅" },
@@ -54,11 +30,8 @@ export default function DocumentosPage() {
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [loadingChunks, setLoadingChunks] = useState(false);
 
-  const [uploadProgress, setUploadProgress] = useState<Progress | null>(null);
   const [uploadFilename, setUploadFilename] = useState("");
   const [extractRefs, setExtractRefs] = useState(true);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadDocs = useCallback(async () => {
     try {
@@ -71,42 +44,14 @@ export default function DocumentosPage() {
     }
   }, []);
 
+  const { progress: uploadProgress, startPolling, stopPolling } = useUploadProgress({
+    onReady: loadDocs,
+  });
+
   useEffect(() => {
     loadDocs();
-  }, [loadDocs]);
-
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-    };
-  }, []);
-
-  const startPolling = (docId: string) => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-
-    pollingRef.current = setInterval(async () => {
-      try {
-        const progress = await api.documents.progress(docId);
-        setUploadProgress(progress);
-
-        if (progress.status === "ready" || progress.status === "error") {
-          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-          if (progress.status === "ready") {
-            timeoutRef.current = setTimeout(() => {
-              setUploadProgress(null);
-              setUploadFilename("");
-              loadDocs();
-              timeoutRef.current = null;
-            }, 1500);
-          }
-        }
-      } catch {
-        if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-      }
-    }, 3000);
-  };
+    return () => stopPolling();
+  }, [loadDocs, stopPolling]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -114,14 +59,12 @@ export default function DocumentosPage() {
 
     setError("");
     setUploadFilename(file.name);
-    setUploadProgress({ status: "processing", stage: "starting", current: 0, total: 0, message: "Subiendo archivo...", pages: 0, chunks_found: 0, error: null });
 
     try {
       const result = await api.documents.upload(file, extractRefs);
       startPolling(result.id);
     } catch (err: any) {
       setError(err.message);
-      setUploadProgress(null);
       setUploadFilename("");
     }
   };
@@ -162,11 +105,7 @@ export default function DocumentosPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Documentos</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Normativas aduaneras indexadas</p>
-        </div>
+      <PageHeader title="Documentos" subtitle="Normativas aduaneras indexadas">
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
             <input
@@ -189,10 +128,10 @@ export default function DocumentosPage() {
             />
           </label>
         </div>
-      </div>
+      </PageHeader>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-950 px-4 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
+        <ErrorBanner message={error} />
       )}
 
       {uploadProgress && (
@@ -237,7 +176,7 @@ export default function DocumentosPage() {
                 if (uploadProgress.pages > 0 && s.key === "parsing") {
                   extra = ` (${uploadProgress.pages} pág)`;
                 }
-                if (uploadProgress.chunks_found > 0 && (s.key === "detecting" || s.key === "merging")) {
+                if (uploadProgress.chunks_found > 0 && s.key === "detecting") {
                   extra = ` (${uploadProgress.chunks_found} caps)`;
                 }
               }
@@ -274,10 +213,10 @@ export default function DocumentosPage() {
       {loading ? (
         <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
       ) : docs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-12 text-center">
+        <EmptyState>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">No hay documentos todavia</p>
           <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Sube normativas en PDF o DOCX</p>
-        </div>
+        </EmptyState>
       ) : (
         <div className="space-y-3">
           {docs.map((doc) => (
@@ -285,10 +224,10 @@ export default function DocumentosPage() {
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                    {doc.original_filename}
+                    {doc.filename}
                   </p>
                   <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-                    {doc.chunks_count} chunks &middot;{" "}
+                    {doc.chunks_count} chunks ·{" "}
                     {new Date(doc.created_at).toLocaleDateString("es-BO")}
                   </p>
                 </div>

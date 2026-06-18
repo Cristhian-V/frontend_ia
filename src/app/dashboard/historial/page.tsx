@@ -3,8 +3,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 
 interface QueryLog {
   id: string;
@@ -17,18 +20,32 @@ interface QueryLog {
 
 export default function HistorialPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [logs, setLogs] = useState<QueryLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [allMode, setAllMode] = useState(false);
+
+  const loadHistory = async (all: boolean) => {
+    setLoading(true);
+    try {
+      const data = all ? await api.rag.historyAll() : await api.rag.history();
+      setLogs(data);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.rag
-      .history()
-      .then(setLogs)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    loadHistory(allMode);
+  }, [allMode]);
+
+  const toggleAllMode = () => {
+    setAllMode((prev) => !prev);
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -61,12 +78,20 @@ export default function HistorialPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Historial</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Consultas realizadas</p>
-        </div>
-      </div>
+      <PageHeader title="Historial" subtitle="Consultas realizadas">
+        {user?.is_admin && (
+          <button
+            onClick={toggleAllMode}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              allMode
+                ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            }`}
+          >
+            {allMode ? "Todos los usuarios" : "Mi historial"}
+          </button>
+        )}
+      </PageHeader>
 
       <div className="mb-4">
         <input
@@ -81,14 +106,14 @@ export default function HistorialPage() {
       {loading ? (
         <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-12 text-center">
+        <EmptyState>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {search.trim() ? "Sin resultados para esta busqueda" : "No hay consultas todavia"}
           </p>
           <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
             {search.trim() ? "Intenta otros terminos" : "Realiza tu primera consulta en el Chat"}
           </p>
-        </div>
+        </EmptyState>
       ) : (
         <div className="space-y-3">
           {filtered.map((log) => (
