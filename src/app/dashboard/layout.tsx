@@ -17,6 +17,7 @@ const allSections = [
       { label: "Historial", href: "/dashboard/historial", icon: "📋" },
       { label: "Pendientes", href: "/dashboard/pendientes", icon: "📌" },
       { label: "Checklist", href: "/dashboard/checklist", icon: "✅" },
+      { label: "OCR Extractor", href: "/dashboard/ocr-extractor", icon: "🔍" },
     ],
   },
   {

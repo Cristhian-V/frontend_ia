@@ -191,4 +191,47 @@ export const api = {
       );
     },
   },
+
+  ocr: {
+    extract: (file: File, onProgress?: (loaded: number, total: number) => void) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const headers: Record<string, string> = {};
+      if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
+      return new Promise<{ blob: Blob; filename: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${API_BASE}/ocr/extract`);
+        if (authToken) xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
+
+        if (onProgress) {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) onProgress(e.loaded, e.total);
+          };
+        }
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const blob = xhr.response as Blob;
+            const disposition = xhr.getResponseHeader("Content-Disposition") || "";
+            const match = disposition.match(/filename="?([^";]+)"?/);
+            const filename = match ? match[1] : "documento.docx";
+            resolve({ blob, filename });
+          } else {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              reject(new Error(data.detail || "Error al procesar"));
+            } catch {
+              reject(new Error("Error al procesar"));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Error de conexion"));
+        xhr.responseType = "blob";
+        xhr.send(formData);
+      });
+    },
+  },
 };
