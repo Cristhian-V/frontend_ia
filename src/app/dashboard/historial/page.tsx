@@ -85,7 +85,7 @@ export default function HistorialPage() {
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
               allMode
                 ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                : "bg-white/[0.04] text-faro-text hover:bg-white/[0.06]"
             }`}
           >
             {allMode ? "Todos los usuarios" : "Mi historial"}
@@ -99,18 +99,18 @@ export default function HistorialPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar en consultas..."
-          className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-xl border border-faro-border bg-faro-surface px-4 py-2 text-sm text-faro-textlight placeholder:text-faro-text/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
 
       {loading ? (
-        <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
+        <div className="text-sm text-faro-text">Cargando...</div>
       ) : filtered.length === 0 ? (
         <EmptyState>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-faro-text">
             {search.trim() ? "Sin resultados para esta busqueda" : "No hay consultas todavia"}
           </p>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="mt-1 text-xs text-faro-text">
             {search.trim() ? "Intenta otros terminos" : "Realiza tu primera consulta en el Chat"}
           </p>
         </EmptyState>
@@ -119,7 +119,7 @@ export default function HistorialPage() {
           {filtered.map((log) => (
             <div
               key={log.id}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+              className="rounded-xl border border-faro-border bg-faro-surface"
             >
               <div className="flex items-start gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
@@ -127,14 +127,14 @@ export default function HistorialPage() {
                     onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                     className="flex w-full items-center justify-between text-left"
                   >
-                    <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                    <p className="truncate text-sm font-medium text-faro-textlight">
                       {highlight(log.query, search)}
                     </p>
-                    <span className="ml-3 shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                    <span className="ml-3 shrink-0 text-xs text-faro-text">
                       {expanded === log.id ? "▲" : "▼"}
                     </span>
                   </button>
-                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-1 text-xs text-faro-text">
                     {new Date(log.created_at).toLocaleDateString("es-BO", {
                       day: "numeric",
                       month: "short",
@@ -154,8 +154,8 @@ export default function HistorialPage() {
               </div>
 
               {expanded === log.id && (
-                <div className="border-t border-zinc-100 dark:border-zinc-800 px-4 py-3">
-                  <div className="whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300">
+                <div className="border-t border-faro-border px-4 py-3">
+                  <div className="whitespace-pre-wrap text-sm text-faro-text">
                     {search.trim() ? (
                       highlight(log.answer, search)
                     ) : (

@@ -122,7 +122,7 @@ export default function ConfiguracionesPage() {
   if (!user?.is_admin) {
     return (
       <EmptyState>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">Acceso denegado</p>
+        <p className="text-sm text-faro-text">Acceso denegado</p>
       </EmptyState>
     );
   }
@@ -132,7 +132,7 @@ export default function ConfiguracionesPage() {
       <PageHeader title="Configuraciones" subtitle="Gestion de usuarios y permisos">
         <button
           onClick={openCreate}
-          className="rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
         >
           Nuevo usuario
         </button>
@@ -141,30 +141,30 @@ export default function ConfiguracionesPage() {
       {error && <ErrorBanner message={error} />}
 
       {loading ? (
-        <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
+        <div className="text-sm text-faro-text">Cargando...</div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <div className="overflow-hidden rounded-xl border border-faro-border bg-faro-surface">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
-                <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">Nombre</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">Rol</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">Herramientas</th>
-                <th className="px-4 py-3 text-right font-medium text-zinc-500 dark:text-zinc-400">Acciones</th>
+              <tr className="border-b border-faro-border bg-white/[0.04]">
+                <th className="px-4 py-3 text-left font-medium text-faro-text">Nombre</th>
+                <th className="px-4 py-3 text-left font-medium text-faro-text">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-faro-text">Rol</th>
+                <th className="px-4 py-3 text-left font-medium text-faro-text">Herramientas</th>
+                <th className="px-4 py-3 text-right font-medium text-faro-text">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b border-zinc-100 dark:border-zinc-800 last:border-0">
-                  <td className="px-4 py-3 font-medium text-zinc-800 dark:text-zinc-200">{u.full_name}</td>
-                  <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{u.email}</td>
+                <tr key={u.id} className="border-b border-faro-border last:border-0">
+                  <td className="px-4 py-3 font-medium text-faro-textlight">{u.full_name}</td>
+                  <td className="px-4 py-3 text-faro-text">{u.email}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                         u.is_admin
                           ? "bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                          : "bg-white/[0.04] text-faro-text"
                       }`}
                     >
                       {u.is_admin ? "Admin" : "Usuario"}
@@ -186,7 +186,7 @@ export default function ConfiguracionesPage() {
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => openEdit(u)}
-                      className="rounded px-2 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 mr-1"
+                      className="rounded px-2 py-1 text-xs font-medium text-faro-text hover:bg-white/[0.04] mr-1"
                     >
                       Editar
                     </button>
@@ -206,8 +206,8 @@ export default function ConfiguracionesPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setModalOpen(false)}>
-          <div className="w-full max-w-md rounded-xl bg-white dark:bg-zinc-900 p-6 shadow-xl border border-zinc-200 dark:border-zinc-800" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="w-full max-w-md rounded-xl bg-faro-surface p-6 shadow-xl border border-faro-border" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-lg font-semibold text-faro-textlight">
               {editing ? "Editar usuario" : "Nuevo usuario"}
             </h2>
 
@@ -240,12 +240,12 @@ export default function ConfiguracionesPage() {
                   type="checkbox"
                   checked={form.is_admin}
                   onChange={(e) => setForm({ ...form, is_admin: e.target.checked })}
-                  className="rounded border-zinc-300 dark:border-zinc-700"
+                  className="rounded border-faro-border"
                 />
-                <label className="text-sm text-zinc-700 dark:text-zinc-300">Administrador</label>
+                <label className="text-sm text-faro-textlight">Administrador</label>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Herramientas</label>
+                <label className="mb-1 block text-xs font-medium text-faro-text">Herramientas</label>
                 <div className="space-y-2">
                   {Object.entries(TOOL_LABELS).map(([key, label]) => {
                     const entry = form.tools.find(t => t.tool_key === key);
@@ -257,15 +257,15 @@ export default function ConfiguracionesPage() {
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleTool(key)}
-                            className="rounded border-zinc-300 dark:border-zinc-700"
+                            className="rounded border-faro-border"
                           />
-                          <span className="text-sm text-zinc-700 dark:text-zinc-300">{label}</span>
+                          <span className="text-sm text-faro-textlight">{label}</span>
                         </label>
                         {checked && key === TOOL_KEYS[0] && (
                           <select
                             value={entry?.role || ""}
                             onChange={(e) => setRole(key, e.target.value || null)}
-                            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1 text-xs text-zinc-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none"
+                            className="rounded-lg border border-faro-border bg-faro-bg px-2 py-1 text-xs text-faro-textlight focus:border-blue-500 focus:outline-none"
                           >
                             {Object.entries(ROLE_LABELS).map(([rk, rl]) => (
                               <option key={rk} value={rk}>{rl}</option>
@@ -280,10 +280,10 @@ export default function ConfiguracionesPage() {
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setModalOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <button onClick={() => setModalOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-faro-text hover:bg-white/[0.04]">
                 Cancelar
               </button>
-              <button onClick={handleSave} className="rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600">
+              <button onClick={handleSave} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
                 {editing ? "Guardar" : "Crear"}
               </button>
             </div>

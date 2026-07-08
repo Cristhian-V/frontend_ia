@@ -12,8 +12,8 @@ export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
       <div>
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{title}</h1>
-        {subtitle && <p className="text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</p>}
+        <h1 className="text-2xl font-bold text-faro-textlight">{title}</h1>
+        {subtitle && <p className="text-sm text-faro-text mt-1">{subtitle}</p>}
       </div>
       {children}
     </div>

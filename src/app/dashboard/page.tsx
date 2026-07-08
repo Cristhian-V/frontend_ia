@@ -16,7 +16,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-zinc-400">
+      <div className="flex min-h-screen items-center justify-center text-sm text-faro-text">
         Cargando...
       </div>
     );

@@ -80,19 +80,19 @@ export default function PendientesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Pendientes</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <h1 className="text-xl font-bold text-faro-textlight">Pendientes</h1>
+        <p className="text-sm text-faro-text">
           Documentos referenciados en las normativas
         </p>
       </div>
 
-      <div className="mb-4 flex gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 p-0.5 w-fit">
+      <div className="mb-4 flex gap-1 rounded-lg bg-white/[0.04] p-0.5 w-fit">
         <button
           onClick={() => setTab("pending")}
           className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
             tab === "pending"
-              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+              ? "bg-faro-surface text-faro-textlight shadow-sm"
+              : "text-faro-text hover:text-faro-textlight"
           }`}
         >
           Pendientes
@@ -101,8 +101,8 @@ export default function PendientesPage() {
           onClick={() => setTab("resolved")}
           className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
             tab === "resolved"
-              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+              ? "bg-faro-surface text-faro-textlight shadow-sm"
+              : "text-faro-text hover:text-faro-textlight"
           }`}
         >
           Resueltas
@@ -110,15 +110,15 @@ export default function PendientesPage() {
       </div>
 
       {loading ? (
-        <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
+        <div className="text-sm text-faro-text">Cargando...</div>
       ) : (() => {
         const filtered = groups.filter((g) => (tab === "pending" ? !g.resolved : g.resolved));
         return filtered.length === 0 ? (
         <EmptyState>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-faro-text">
             {tab === "pending" ? "No hay documentos pendientes" : "No hay referencias resueltas"}
           </p>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="mt-1 text-xs text-faro-text">
             {tab === "pending"
               ? "Al subir documentos se detectaran automaticamente las referencias"
               : "Las referencias vinculadas apareceran aqui"}
@@ -129,10 +129,10 @@ export default function PendientesPage() {
           {filtered.map((g, idx) => (
             <div
               key={idx}
-              className={`rounded-xl border bg-white dark:bg-zinc-900 ${
+              className={`rounded-xl border bg-faro-surface ${
                 g.resolved
                   ? "border-green-200 dark:border-green-900 opacity-75"
-                  : "border-zinc-200 dark:border-zinc-800"
+                  : "border-faro-border"
               }`}
             >
               <div className="flex items-start justify-between gap-3 px-4 py-3">
@@ -140,14 +140,14 @@ export default function PendientesPage() {
                   onClick={() => toggleGroup(idx)}
                   className="min-w-0 flex-1 text-left"
                 >
-                  <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  <p className="text-sm font-medium text-faro-textlight">
                     {g.ref_title}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     <span className="inline-block rounded bg-blue-50 dark:bg-blue-950 px-2 py-0.5 font-medium text-blue-700 dark:text-blue-300">
                       {TYPE_LABELS[g.ref_type] || g.ref_type}
                     </span>
-                    <span className="text-zinc-500 dark:text-zinc-400 font-mono">
+                    <span className="text-faro-text font-mono">
                       {g.ref_number}
                     </span>
                     <span
@@ -156,7 +156,7 @@ export default function PendientesPage() {
                           ? "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300"
                           : g.relation === "modifica"
                           ? "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                          : "bg-white/[0.04] text-faro-text"
                       }`}
                     >
                       {RELATION_LABELS[g.relation] || g.relation}
@@ -170,7 +170,7 @@ export default function PendientesPage() {
                     >
                       {g.resolved ? "✓ Resuelta" : "⏳ Pendiente"}
                     </span>
-                    <span className="text-zinc-400 dark:text-zinc-500">
+                    <span className="text-faro-text">
                       {g.refs.length} {g.refs.length === 1 ? "referencia" : "referencias"}{" "}
                       {expanded.has(idx) ? "▲" : "▼"}
                     </span>
@@ -186,7 +186,7 @@ export default function PendientesPage() {
                         e.target.value = "";
                       }
                     }}
-                    className="shrink-0 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[160px] truncate mt-1"
+                    className="shrink-0 rounded-lg border border-faro-border bg-faro-bg px-2 py-1.5 text-xs text-faro-textlight focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[160px] truncate mt-1"
                   >
                     <option value="">Vincular doc...</option>
                     {docs.map((d) => (
@@ -199,7 +199,7 @@ export default function PendientesPage() {
                 {g.resolved && (
                   <button
                     onClick={() => handleResolve(g.ref_ids[0], null, true)}
-                    className="shrink-0 rounded px-2 py-1 text-xs text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 mt-1"
+                    className="shrink-0 rounded px-2 py-1 text-xs text-faro-text hover:bg-white/[0.04] mt-1"
                     title="Desvincular todas las refs a esta ley"
                   >
                     ✕
@@ -208,19 +208,19 @@ export default function PendientesPage() {
               </div>
 
               {expanded.has(idx) && (
-                <div className="border-t border-zinc-100 dark:border-zinc-800 px-4 py-2">
+                <div className="border-t border-faro-border px-4 py-2">
                   {g.refs.map((ref, j) => (
                     <div
                       key={j}
-                      className="py-1.5 text-xs border-b border-zinc-50 dark:border-zinc-800 last:border-0"
+                      className="py-1.5 text-xs border-b border-faro-border/50 last:border-0"
                     >
                       <div className="flex items-start gap-2">
-                        <span className="text-zinc-400 dark:text-zinc-500 shrink-0 mt-0.5">
+                        <span className="text-faro-text shrink-0 mt-0.5">
                           →
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-zinc-500 dark:text-zinc-400">
+                            <span className="font-medium text-faro-text">
                               {ref.source_filename}
                             </span>
                             <span
@@ -234,11 +234,11 @@ export default function PendientesPage() {
                             </span>
                           </div>
                           <br />
-                          <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                          <span className="font-medium text-faro-text">
                             {ref.chapter_title || "Articulo referenciado"}
                           </span>
                           {ref.ref_article && (
-                            <span className="text-zinc-400 dark:text-zinc-500">
+                            <span className="text-faro-text">
                               {" "}
                               — {ref.ref_article}
                             </span>
@@ -270,7 +270,7 @@ export default function PendientesPage() {
                         </div>
                       </div>
                       {refExpanded.has(ref.ref_id) && ref.chunk_text && (
-                        <div className="mt-1 ml-6 rounded bg-zinc-50 dark:bg-zinc-800 p-2 text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                        <div className="mt-1 ml-6 rounded bg-white/[0.04] p-2 text-xs text-faro-text whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
                           {ref.chunk_text}
                         </div>
                       )}

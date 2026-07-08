@@ -107,17 +107,17 @@ export default function DocumentosPage() {
     <div>
       <PageHeader title="Documentos" subtitle="Normativas aduaneras indexadas">
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs text-faro-text cursor-pointer select-none">
             <input
               type="checkbox"
               checked={extractRefs}
               onChange={(e) => setExtractRefs(e.target.checked)}
-              className="rounded border-zinc-300 dark:border-zinc-700"
+              className="rounded border-faro-border"
               disabled={!!uploadProgress}
             />
             Extraer referencias
           </label>
-          <label className="cursor-pointer rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50">
+          <label className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50">
             {uploadProgress ? "Procesando..." : "Subir documento"}
             <input
               type="file"
@@ -135,15 +135,15 @@ export default function DocumentosPage() {
       )}
 
       {uploadProgress && (
-        <div className="mb-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 mb-1">
+        <div className="mb-6 rounded-xl border border-faro-border bg-faro-surface p-5">
+          <p className="text-sm font-medium text-faro-textlight mb-1">
             📄 {uploadFilename}
           </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+          <p className="text-xs text-faro-text mb-4">
             {uploadProgress.message}
           </p>
 
-          <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+          <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-white/[0.04]">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
                 uploadProgress.status === "error"
@@ -189,10 +189,10 @@ export default function DocumentosPage() {
                   <span
                     className={
                       stageStatus === "done"
-                        ? "text-zinc-400 dark:text-zinc-500 line-through"
+                        ? "text-faro-text line-through"
                         : stageStatus === "active"
-                        ? "text-zinc-800 dark:text-zinc-200 font-medium"
-                        : "text-zinc-300 dark:text-zinc-600"
+                        ? "text-faro-textlight font-medium"
+                        : "text-faro-text/50"
                     }
                   >
                     {s.icon} {s.label}{extra}
@@ -211,22 +211,22 @@ export default function DocumentosPage() {
       )}
 
       {loading ? (
-        <div className="text-sm text-zinc-400 dark:text-zinc-500">Cargando...</div>
+        <div className="text-sm text-faro-text">Cargando...</div>
       ) : docs.length === 0 ? (
         <EmptyState>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No hay documentos todavia</p>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Sube normativas en PDF o DOCX</p>
+          <p className="text-sm text-faro-text">No hay documentos todavia</p>
+          <p className="mt-1 text-xs text-faro-text">Sube normativas en PDF o DOCX</p>
         </EmptyState>
       ) : (
         <div className="space-y-3">
           {docs.map((doc) => (
-            <div key={doc.id} className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <div key={doc.id} className="overflow-hidden rounded-xl border border-faro-border bg-faro-surface">
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  <p className="truncate text-sm font-medium text-faro-textlight">
                     {doc.filename}
                   </p>
-                  <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+                  <p className="mt-0.5 text-xs text-faro-text">
                     {doc.chunks_count} chunks ·{" "}
                     {new Date(doc.created_at).toLocaleDateString("es-BO")}
                   </p>
@@ -245,7 +245,7 @@ export default function DocumentosPage() {
                   </span>
                   <button
                     onClick={() => handleToggleChunks(doc.id)}
-                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-faro-text hover:bg-white/[0.04]"
                   >
                     {expandedDoc === doc.id ? "Ocultar chunks" : "Ver chunks"}
                   </button>
@@ -259,29 +259,29 @@ export default function DocumentosPage() {
               </div>
 
               {expandedDoc === doc.id && (
-                <div className="border-t border-zinc-100 dark:border-zinc-800">
+                <div className="border-t border-faro-border">
                   {loadingChunks ? (
-                    <div className="px-4 py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">
+                    <div className="px-4 py-6 text-center text-sm text-faro-text">
                       Cargando chunks...
                     </div>
                   ) : (
                     <div className="max-h-96 overflow-y-auto">
                       <table className="w-full text-xs">
-                        <thead className="sticky top-0 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
+                        <thead className="sticky top-0 border-b border-faro-border bg-white/[0.02]">
                           <tr>
-                            <th className="px-4 py-2 text-left font-medium text-zinc-500 dark:text-zinc-400 w-10">#</th>
-                            <th className="px-4 py-2 text-left font-medium text-zinc-500 dark:text-zinc-400 w-64">Capitulo</th>
-                            <th className="px-4 py-2 text-left font-medium text-zinc-500 dark:text-zinc-400">Contenido del chunk</th>
-                            <th className="px-4 py-2 text-right font-medium text-zinc-500 dark:text-zinc-400 w-20">Paginas</th>
+                            <th className="px-4 py-2 text-left font-medium text-faro-text w-10">#</th>
+                            <th className="px-4 py-2 text-left font-medium text-faro-text w-64">Capitulo</th>
+                            <th className="px-4 py-2 text-left font-medium text-faro-text">Contenido del chunk</th>
+                            <th className="px-4 py-2 text-right font-medium text-faro-text w-20">Paginas</th>
                           </tr>
                         </thead>
                         <tbody>
                           {chunks.map((chunk) => (
-                            <tr key={chunk.id} className="border-b border-zinc-50 dark:border-zinc-800 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                              <td className="px-4 py-2 text-zinc-400 dark:text-zinc-500 align-top">{chunk.chunk_index}</td>
-                              <td className="px-4 py-2 text-zinc-700 dark:text-zinc-300 text-xs font-medium align-top whitespace-pre-wrap">{chunk.chapter_title || "-"}</td>
-                              <td className="px-4 py-2 text-zinc-600 dark:text-zinc-400 align-top whitespace-pre-wrap break-words text-xs">{chunk.text}</td>
-                              <td className="px-4 py-2 text-zinc-400 dark:text-zinc-500 text-right align-top text-xs">
+                            <tr key={chunk.id} className="border-b border-faro-border last:border-0 hover:bg-white/[0.04]">
+                              <td className="px-4 py-2 text-faro-text align-top">{chunk.chunk_index}</td>
+                              <td className="px-4 py-2 text-faro-textlight text-xs font-medium align-top whitespace-pre-wrap">{chunk.chapter_title || "-"}</td>
+                              <td className="px-4 py-2 text-faro-text align-top whitespace-pre-wrap break-words text-xs">{chunk.text}</td>
+                              <td className="px-4 py-2 text-faro-text text-right align-top text-xs">
                                 {chunk.page_start != null && chunk.page_end != null ? `${chunk.page_start + 1}-${chunk.page_end + 1}` : "-"}
                               </td>
                             </tr>

@@ -6,22 +6,61 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+  --color-faro-bg: var(--faro-bg);
+  --color-faro-sidebar: var(--faro-sidebar);
+  --color-faro-surface: var(--faro-surface);
+  --color-faro-border: var(--faro-border);
+  --color-faro-accent: var(--faro-accent);
+  --color-faro-text: var(--faro-text);
+  --color-faro-textlight: var(--faro-textlight);
 }
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --faro-bg: #f5f6f8;
+  --faro-sidebar: #ffffff;
+  --faro-surface: #ffffff;
+  --faro-border: #e5e7eb;
+  --faro-accent: #0ea5e9;
+  --faro-text: #64748b;
+  --faro-textlight: #111827;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #0f1115;
+  --foreground: #f8fafc;
+  --faro-bg: #0f1115;
+  --faro-sidebar: #161920;
+  --faro-surface: #1c1f27;
+  --faro-border: #2a2e39;
+  --faro-accent: #0ea5e9;
+  --faro-text: #94a3b8;
+  --faro-textlight: #f8fafc;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2e39;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f4555;
 }

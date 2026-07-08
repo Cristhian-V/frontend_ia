@@ -9,7 +9,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ children, className = "" }: EmptyStateProps) {
   return (
-    <div className={`rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-12 text-center ${className}`}>
+    <div className={`rounded-xl border border-dashed border-faro-border bg-faro-surface p-12 text-center ${className}`}>
       {children}
     </div>
   );
