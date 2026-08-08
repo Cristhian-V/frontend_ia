@@ -1,7 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
-import type { User, ToolEntry, Progress, Doc, Chunk } from "./types";
+import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad } from "./types";
 
 let authToken: string | null = null;
 
@@ -232,6 +232,107 @@ export const api = {
         xhr.responseType = "blob";
         xhr.send(formData);
       });
+    },
+  },
+  liquidador: {
+    tc: () =>
+      request<TipoCambio | null>("/liquidador/tc", {}, ADMIN_API_BASE),
+    tcHistorico: () =>
+      request<TipoCambio[]>("/liquidador/tc/historico", {}, ADMIN_API_BASE),
+  },
+  transbel: {
+    clasificar: (file: File) =>
+      new Promise<{ blob: Blob; filename: string }>((resolve, reject) => {
+        const formData = new FormData();
+        formData.append("archivo", file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${API_BASE}/transbel/clasificar`);
+        if (authToken) xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const blob = xhr.response as Blob;
+            const disposition = xhr.getResponseHeader("Content-Disposition") || "";
+            const match = disposition.match(/filename="?([^";]+)"?/);
+            const filename = match ? match[1] : "procesado.xls";
+            resolve({ blob, filename });
+          } else {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              reject(new Error(data.detail || "Error al procesar"));
+            } catch {
+              reject(new Error("Error al procesar"));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Error de conexion"));
+        xhr.responseType = "blob";
+        xhr.send(formData);
+      }),
+  },
+  fnning: {
+    list: (page = 1, size = 30) =>
+      request<{ data: OperacionXml[]; total: number; page: number; pages: number }>(
+        `/fnning/operaciones?page=${page}&size=${size}`,
+        {},
+        ADMIN_API_BASE
+      ),
+    detail: (id: number) =>
+      request<OperacionXml>(`/fnning/operaciones/${id}`, {}, ADMIN_API_BASE),
+    full: (id: number) =>
+      request<{ operacion: Record<string, unknown>; items: Record<string, unknown>[] }>(
+        `/fnning/operaciones/${id}/full`,
+        {},
+        ADMIN_API_BASE
+      ),
+    delete: (id: number) =>
+      request<{ detail: string }>(`/fnning/operaciones/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+    xml: (id: number) =>
+      fetch(`${ADMIN_API_BASE}/fnning/operaciones/${id}/xml`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      }).then((r) => {
+        if (!r.ok) return r.json().then((d) => { throw new Error(d.detail || "Error") });
+        return r.blob();
+      }),
+    excel: (id: number) =>
+      fetch(`${ADMIN_API_BASE}/fnning/operaciones/${id}/excel`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      }).then((r) => {
+        if (!r.ok) return r.json().then((d) => { throw new Error(d.detail || "Error") });
+        return r.blob();
+      }),
+    update: (id: number, body: Record<string, unknown>) =>
+      request<{ detail: string }>(`/fnning/operaciones/${id}`, { method: "PUT", body: JSON.stringify(body) }, ADMIN_API_BASE),
+    create: (body: Record<string, unknown>) =>
+      request<{ OperacionId: number; detail: string }>("/fnning/operaciones", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+    recalcular: (operacion: Record<string, unknown>, items: Record<string, unknown>[]) =>
+      request<{ operacion: Record<string, unknown>; items: Record<string, unknown>[]; calc: Record<string, number> }>(
+        "/fnning/operaciones/recalcular",
+        { method: "POST", body: JSON.stringify({ operacion, items }) },
+        ADMIN_API_BASE
+      ),
+    parseExcel: (file: File) => {
+      const formData = new FormData();
+      formData.append("excel", file);
+      return fetch(`${ADMIN_API_BASE}/fnning/operaciones/parse-excel`, {
+        method: "POST",
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        body: formData,
+      }).then((r) => {
+        if (!r.ok) return r.json().then((d) => { throw new Error(d.detail || "Error al parsear") });
+        return r.json() as Promise<{ operacion: Record<string, unknown>; items: Record<string, unknown>[] }>;
+      });
+    },
+    entidades: {
+      list: () => request<Entidad[]>("/fnning/entidades", {}, ADMIN_API_BASE),
+      create: (body: Partial<Entidad>) =>
+        request<{ EntidadId: number; detail: string }>("/fnning/entidades", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      update: (id: number, body: Partial<Entidad>) =>
+        request<{ detail: string }>(`/fnning/entidades/${id}`, { method: "PUT", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      delete: (id: number) =>
+        request<{ detail: string }>(`/fnning/entidades/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
     },
   },
 };

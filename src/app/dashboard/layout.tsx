@@ -14,6 +14,11 @@ import {
   CheckSquare,
   ScanText,
   Calculator,
+  DollarSign,
+  Package,
+  Tag,
+  FolderTree,
+  FileSearch,
   Settings,
   Users,
   Sun,
@@ -41,7 +46,25 @@ const allSections = [
     key: TOOL_KEYS[1],
     label: TOOL_LABELS[TOOL_KEYS[1]],
     icon: Calculator,
-    items: [],
+    items: [
+      { label: "Tipo de Cambio", href: "/dashboard/liquidador/tipo-cambio", icon: DollarSign },
+    ],
+  },
+  {
+    key: TOOL_KEYS[2],
+    label: TOOL_LABELS[TOOL_KEYS[2]],
+    icon: Package,
+    items: [
+      { label: "Clasificador Arancelario", href: "/dashboard/transbel/clasificador", icon: Tag },
+    ],
+  },
+  {
+    key: TOOL_KEYS[3],
+    label: TOOL_LABELS[TOOL_KEYS[3]],
+    icon: FolderTree,
+    items: [
+      { label: "Operaciones XML", href: "/dashboard/fnning/operaciones-xml", icon: FileSearch },
+    ],
   },
 ];
 

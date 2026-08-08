@@ -1,4 +1,5 @@
-export const TOOL_KEYS = ["agente_aduanero_ia", "liquidador_ia"] as const;
+export const TOOL_KEYS = ["agente_aduanero_ia", "liquidador_ia", "herramientas_transbel", "fnning"] as const;
+
 export type ToolKey = (typeof TOOL_KEYS)[number];
 
 export const ROLES = ["consultor", "gestor"] as const;
@@ -7,8 +8,9 @@ export type Role = (typeof ROLES)[number];
 export const TOOL_LABELS: Record<string, string> = {
   agente_aduanero_ia: "Agente Aduanero IA",
   liquidador_ia: "Liquidador IA",
+  herramientas_transbel: "Herramientas Transbel",
+  fnning: "FNNING",
 };
-
 export const ROLE_LABELS: Record<string, string> = {
   gestor: "Gestor de documentos",
   consultor: "Consultor",

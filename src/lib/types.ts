@@ -42,3 +42,46 @@ export interface Progress {
   chunks_found: number;
   error: string | null;
 }
+
+export interface TipoCambio {
+  fecha: string;
+  compra: number;
+  venta: number;
+}
+
+export interface OperacionXml {
+  OperacionId: number;
+  NroRegistro: string;
+  Patron: string;
+  Recinto: string;
+  FechaValidacion: string | null;
+  FechaPago: string | null;
+  FechaSalidadeMercancia: string | null;
+  Canal: string | null;
+  MonedaId: string | null;
+  FOB: number | null;
+  Flete: number | null;
+  ValorCIF: number | null;
+  UsuarioId: string | null;
+  UsuarioNombre: string | null;
+  FechaReg: string | null;
+  FechaMod: string | null;
+}
+
+export interface Entidad {
+  EntidadId: number;
+  TipoEntidadId: string;
+  TipoEntidadDesc: string;
+  Nit: string;
+  Nombre: string;
+  Pais: string;
+  Direccion: string;
+  Ciudad: string;
+  Estado: string;
+  DireccionPostal: string;
+  Telefono: string;
+  UsuarioId: number;
+  FechaReg: string;
+  FechaModificacion: string;
+  Activo: boolean;
+}
