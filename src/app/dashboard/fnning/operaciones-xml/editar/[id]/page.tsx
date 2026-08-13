@@ -263,7 +263,7 @@ export default function EditarOperacionPage() {
     fieldRefs.current.forEach((el, field) => {
       body[field] = el.value || null;
     });
-    if (isNew && items.length > 0) {
+    if (items.length > 0) {
       body.items = items;
     }
 
