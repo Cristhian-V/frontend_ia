@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import Logo from "@/components/Logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,21 +32,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-faro-bg px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-white">
-              <path d="M8 9h8" />
-              <path d="M10 13h4" />
-              <path d="M12 22v-9" />
-              <path d="m9 22 2-9h2l2 9" />
-              <path d="M11 5.5a1.5 1.5 0 0 1 2 0 1.5 1.5 0 0 1-2 0Z" />
-              <path d="M22 17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1h20v1Z" />
-              <path d="M18 16V9a6 6 0 0 0-12 0v7" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold tracking-widest text-cyan-400">F.A.R.O.</h1>
-          <p className="text-[10px] text-faro-text uppercase tracking-wider mt-1">
-            Framework de Asistencia, Respuesta y Operaciones
-          </p>
+          <Logo className="mx-auto h-16" />
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-xl bg-faro-surface border border-faro-border p-6 shadow-xl">

@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "F.A.R.O.",
-  description: "Framework de Asistencia, Respuesta y Operaciones",
+  title: "Hermes",
+  description: "Hermes — Asistente de normativa aduanera",
 };
 
 export default function RootLayout({

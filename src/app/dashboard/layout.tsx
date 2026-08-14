@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useEffect, useState, useMemo } from "react";
 import { TOOL_KEYS, TOOL_LABELS, ROLES } from "@/lib/tools";
+import Logo from "@/components/Logo";
 import {
   Bot,
   MessageSquare,
@@ -67,18 +68,6 @@ const allSections = [
     ],
   },
 ];
-
-const LogoIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white">
-    <path d="M8 9h8" />
-    <path d="M10 13h4" />
-    <path d="M12 22v-9" />
-    <path d="m9 22 2-9h2l2 9" />
-    <path d="M11 5.5a1.5 1.5 0 0 1 2 0 1.5 1.5 0 0 1-2 0Z" />
-    <path d="M22 17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1h20v1Z" />
-    <path d="M18 16V9a6 6 0 0 0-12 0v7" />
-  </svg>
-);
 
 export default function DashboardLayout({
   children,
@@ -164,18 +153,8 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-faro-bg">
       <aside className="flex w-64 flex-col bg-faro-sidebar border-r border-faro-border">
-        <div className="h-20 flex items-center px-4 border-b border-faro-border gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
-            <LogoIcon />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold tracking-widest text-cyan-400 text-lg leading-none">
-              F.A.R.O.
-            </span>
-            <span className="text-[9px] text-faro-text uppercase tracking-wider mt-1 leading-tight">
-              Framework de Asistencia,<br />Respuesta y Operaciones
-            </span>
-          </div>
+        <div className="h-20 flex items-center px-4 border-b border-faro-border shrink-0">
+          <Logo className="h-10" />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
