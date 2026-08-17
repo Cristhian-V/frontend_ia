@@ -296,11 +296,11 @@ export default function EditarOperacionPage() {
 
   const handleExportXml = async () => {
     try {
-      const blob = await api.fnning.xml(Number(id));
+      const { blob, filename } = await api.fnning.xml(Number(id));
       const url = window.URL.createObjectURL(blob);
       const a = window.document.createElement("a");
       a.href = url;
-      a.download = `export_${id}.xml`;
+      a.download = filename;
       window.document.body.appendChild(a);
       a.click();
       window.document.body.removeChild(a);

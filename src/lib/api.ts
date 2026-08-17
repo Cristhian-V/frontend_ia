@@ -300,9 +300,13 @@ export const api = {
     xml: (id: number) =>
       fetch(`${ADMIN_API_BASE}/fnning/operaciones/${id}/xml`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-      }).then((r) => {
+      }).then(async (r) => {
         if (!r.ok) return r.json().then((d) => { throw new Error(d.detail || "Error") });
-        return r.blob();
+        const blob = await r.blob();
+        const disposition = r.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename="?([^";]+)"?/);
+        const filename = match ? match[1] : `export_${id}.xml`;
+        return { blob, filename };
       }),
     excel: (id: number) =>
       fetch(`${ADMIN_API_BASE}/fnning/operaciones/${id}/excel`, {
