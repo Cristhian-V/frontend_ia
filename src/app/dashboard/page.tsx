@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { getFirstAccessibleRoute } from "@/lib/navigation";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/dashboard/chat");
+      router.replace(getFirstAccessibleRoute(user));
     }
   }, [loading, user, router]);
 

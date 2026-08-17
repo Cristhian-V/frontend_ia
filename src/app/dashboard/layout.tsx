@@ -4,70 +4,15 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useEffect, useState, useMemo } from "react";
-import { TOOL_KEYS, TOOL_LABELS, ROLES } from "@/lib/tools";
 import Logo from "@/components/Logo";
+import { buildNavSections } from "@/lib/navigation";
 import {
-  Bot,
-  MessageSquare,
-  FileText,
-  History,
-  Pin,
-  CheckSquare,
-  ScanText,
-  Calculator,
-  DollarSign,
-  Package,
-  Tag,
-  FolderTree,
-  FileSearch,
-  Settings,
-  Users,
   Sun,
   Moon,
   LogOut,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-
-const allSections = [
-  {
-    key: TOOL_KEYS[0],
-    label: TOOL_LABELS[TOOL_KEYS[0]],
-    icon: Bot,
-    items: [
-      { label: "Chat", href: "/dashboard/chat", icon: MessageSquare },
-      { label: "Documentos", href: "/dashboard/documentos", icon: FileText },
-      { label: "Historial", href: "/dashboard/historial", icon: History },
-      { label: "Pendientes", href: "/dashboard/pendientes", icon: Pin },
-      { label: "Checklist", href: "/dashboard/checklist", icon: CheckSquare },
-      { label: "OCR Extractor", href: "/dashboard/ocr-extractor", icon: ScanText },
-    ],
-  },
-  {
-    key: TOOL_KEYS[1],
-    label: TOOL_LABELS[TOOL_KEYS[1]],
-    icon: Calculator,
-    items: [
-      { label: "Tipo de Cambio", href: "/dashboard/liquidador/tipo-cambio", icon: DollarSign },
-    ],
-  },
-  {
-    key: TOOL_KEYS[2],
-    label: TOOL_LABELS[TOOL_KEYS[2]],
-    icon: Package,
-    items: [
-      { label: "Clasificador Arancelario", href: "/dashboard/transbel/clasificador", icon: Tag },
-    ],
-  },
-  {
-    key: TOOL_KEYS[3],
-    label: TOOL_LABELS[TOOL_KEYS[3]],
-    icon: FolderTree,
-    items: [
-      { label: "Operaciones XML", href: "/dashboard/fnning/operaciones-xml", icon: FileSearch },
-    ],
-  },
-];
 
 export default function DashboardLayout({
   children,
@@ -80,41 +25,7 @@ export default function DashboardLayout({
   const { dark, toggle } = useTheme();
   const [expanded, setExpanded] = useState<Set<number>>(new Set([0]));
 
-  const navSections = useMemo(() => {
-    if (!user) return [];
-    const isAdmin = user.is_admin;
-    const userToolKeys = new Set(user.tools.map((t) => t.tool_key));
-
-    const sections = allSections
-      .filter((s) => isAdmin || userToolKeys.has(s.key))
-      .map((s) => {
-        const cloned = { ...s, items: [...s.items] };
-
-        if (!isAdmin && s.key === TOOL_KEYS[0]) {
-          const agenteTool = user.tools.find((t) => t.tool_key === TOOL_KEYS[0]);
-          if (agenteTool?.role === ROLES[0]) {
-            cloned.items = cloned.items.filter((i) =>
-              ["Chat", "Historial"].includes(i.label)
-            );
-          }
-        }
-
-        return cloned;
-      });
-
-    if (isAdmin) {
-      sections.push({
-        key: "admin",
-        label: "Configuraciones",
-        icon: Settings,
-        items: [
-          { label: "Usuarios", href: "/dashboard/configuraciones", icon: Users },
-        ],
-      } as any);
-    }
-
-    return sections;
-  }, [user]);
+  const navSections = useMemo(() => buildNavSections(user), [user]);
 
   const toggleSection = (idx: number) => {
     const next = new Set(expanded);
@@ -208,8 +119,8 @@ export default function DashboardLayout({
                             onClick={() => router.push(item.href)}
                             className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors w-full text-left ${
                               activeItem
-                                ? "text-white bg-white/5 font-medium"
-                                : "text-faro-text hover:text-white hover:bg-white/5"
+                                ? "text-faro-textlight bg-black/5 dark:bg-white/5 font-medium"
+                                : "text-faro-text hover:text-faro-textlight hover:bg-black/5 dark:hover:bg-white/5"
                             }`}
                           >
                             <ItemIcon
