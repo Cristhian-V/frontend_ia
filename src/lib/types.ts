@@ -8,6 +8,8 @@ export interface User {
   email: string;
   full_name: string;
   is_admin: boolean;
+  must_change_password: boolean;
+  usuario_integre?: number | null;
   tools: ToolEntry[];
 }
 

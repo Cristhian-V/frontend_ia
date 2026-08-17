@@ -129,6 +129,12 @@ export default function DashboardLayout({
     }
   }, [loading, user, router]);
 
+  useEffect(() => {
+    if (!loading && user && user.must_change_password) {
+      router.push("/cambiar-contrasena");
+    }
+  }, [loading, user, router]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-faro-text">

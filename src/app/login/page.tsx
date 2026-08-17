@@ -19,8 +19,8 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      const user = await login(email, password);
+      router.push(user.must_change_password ? "/cambiar-contrasena" : "/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {

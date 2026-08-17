@@ -15,6 +15,7 @@ interface UserRow {
   email: string;
   full_name: string;
   is_admin: boolean;
+  usuario_integre?: number | null;
   tools: ToolEntry[];
 }
 
@@ -29,6 +30,7 @@ export default function ConfiguracionesPage() {
     password: "",
     full_name: "",
     is_admin: false,
+    usuario_integre: "",
     tools: [] as ToolEntry[],
   });
   const [error, setError] = useState("");
@@ -50,7 +52,7 @@ export default function ConfiguracionesPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ email: "", password: "", full_name: "", is_admin: false, tools: [{ tool_key: TOOL_KEYS[0], role: "gestor" }] });
+    setForm({ email: "", password: "", full_name: "", is_admin: false, usuario_integre: "", tools: [{ tool_key: TOOL_KEYS[0], role: "gestor" }] });
     setError("");
     setModalOpen(true);
   };
@@ -62,6 +64,7 @@ export default function ConfiguracionesPage() {
       password: "",
       full_name: u.full_name,
       is_admin: u.is_admin,
+      usuario_integre: u.usuario_integre != null ? String(u.usuario_integre) : "",
       tools: u.tools.map(t => ({ tool_key: t.tool_key, role: t.role })),
     });
     setError("");
@@ -90,7 +93,7 @@ export default function ConfiguracionesPage() {
     setError("");
     try {
       if (editing) {
-        const body: any = { full_name: form.full_name, is_admin: form.is_admin, tools: form.tools };
+        const body: any = { full_name: form.full_name, is_admin: form.is_admin, usuario_integre: form.usuario_integre ? Number(form.usuario_integre) : null, tools: form.tools };
         if (form.password) body.password = form.password;
         await api.admin.updateUser(editing.id, body);
       } else {
@@ -99,6 +102,7 @@ export default function ConfiguracionesPage() {
           password: form.password,
           full_name: form.full_name,
           is_admin: form.is_admin,
+          usuario_integre: form.usuario_integre ? Number(form.usuario_integre) : null,
           tools: form.tools,
         });
       }
@@ -229,11 +233,24 @@ export default function ConfiguracionesPage() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               )}
+              {!editing ? (
+                <p className="rounded-lg border border-faro-border bg-faro-bg px-3 py-2 text-xs text-faro-text">
+                  Contrasena inicial: <span className="font-semibold text-faro-textlight">123456</span>. El usuario debera cambiarla en su primer ingreso.
+                </p>
+              ) : (
+                <TextField
+                  label="Contrasena (dejar vacio para no cambiar)"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                />
+              )}
               <TextField
-                label={`Contrasena ${editing ? "(dejar vacio para no cambiar)" : ""}`}
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                label="ID Integgre"
+                type="number"
+                value={form.usuario_integre}
+                onChange={(e) => setForm({ ...form, usuario_integre: e.target.value })}
+                placeholder="UsuarioId de Integgre"
               />
               <div className="flex items-center gap-2">
                 <input

@@ -621,13 +621,13 @@ export default function EditarOperacionPage() {
             {saving ? "Guardando..." : "Guardar"}
           </button>
         )}
-        <button onClick={handleExportXml} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-faro-text hover:bg-white/[0.04] transition-colors ml-auto">
+        <button onClick={handleExportXml} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-faro-surface border border-faro-border text-faro-text hover:bg-white/[0.04] transition-colors">
           <FileCode className="w-4 h-4" />
           Exportar XML
         </button>
         <button
           onClick={openEntidades}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-faro-text hover:bg-white/[0.04] transition-colors">
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-faro-surface border border-faro-border text-faro-text hover:bg-white/[0.04] transition-colors">
           <Building2 className="w-4 h-4" />
           Entidades
         </button>
@@ -638,6 +638,26 @@ export default function EditarOperacionPage() {
         {renderCabeceraSection()}
         {renderValoresSection()}
       </div>
+
+      {isEdit && (
+        <div className="flex items-center gap-2 mt-4">
+          <button onClick={() => fileInputRef.current?.click()} disabled={importing}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-faro-surface border border-faro-border text-faro-text hover:bg-white/[0.04] transition-colors disabled:opacity-50">
+            {importing ? (<span className="animate-spin">⏳</span>) : (<Upload className="w-4 h-4" />)}
+            {importing ? "Importando..." : "Importar"}
+          </button>
+          <input type="file" ref={fileInputRef} accept=".xls,.xlsx,.xlsm" onChange={handleImportar} className="hidden" />
+          <button onClick={handleAjustar} disabled={recalculando || items.length === 0}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-faro-surface border border-faro-border text-faro-text hover:bg-white/[0.04] transition-colors disabled:opacity-50">
+            {recalculando ? (<span className="animate-spin">⏳</span>) : (<Calculator className="w-4 h-4" />)}
+            {recalculando ? "Recalculando..." : "Ajustar"}
+          </button>
+          <button onClick={handleExportExcel} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-faro-surface border border-faro-border text-faro-text hover:bg-white/[0.04] transition-colors">
+            <Download className="w-4 h-4" />
+            Exportar Grid
+          </button>
+        </div>
+      )}
 
       <div className="mt-4 rounded-xl bg-faro-surface border border-faro-border overflow-hidden">
         <button
@@ -718,7 +738,7 @@ export default function EditarOperacionPage() {
                               <td className="px-1.5 py-1 text-faro-textlight text-right font-mono">{fmt(Number(it["Flete"] || 0))}</td>
                               <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["Flete2"] || 0))}</td>
                               <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["Seguro"] || 0))}</td>
-                              <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["OtroGastos"] || 0))}</td>
+                              <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["OtrosGastos"] || 0))}</td>
                               <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["PesoBruto"] || 0))}</td>
                               <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["PesoNeto"] || 0))}</td>
                               <td className="px-1.5 py-1 text-faro-text text-right font-mono">{fmt(Number(it["Bultos"] || 0))}</td>
@@ -751,7 +771,7 @@ export default function EditarOperacionPage() {
                             <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("Flete"))}</td>
                             <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("Flete2"))}</td>
                             <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("Seguro"))}</td>
-                            <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("OtroGastos"))}</td>
+                            <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("OtrosGastos"))}</td>
                             <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("PesoBruto"))}</td>
                             <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("PesoNeto"))}</td>
                             <td className="px-1.5 py-1.5 text-faro-textlight text-right font-mono">{fmt(sum("Bultos"))}</td>
@@ -818,26 +838,6 @@ export default function EditarOperacionPage() {
            </div>
         )}
       </div>
-
-      {isEdit && (
-        <div className="flex items-center gap-2 mt-6">
-          <button onClick={() => fileInputRef.current?.click()} disabled={importing}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-faro-text hover:bg-white/[0.04] transition-colors disabled:opacity-50">
-            {importing ? (<span className="animate-spin">⏳</span>) : (<Upload className="w-4 h-4" />)}
-            {importing ? "Importando..." : "Importar"}
-          </button>
-          <input type="file" ref={fileInputRef} accept=".xls,.xlsx,.xlsm" onChange={handleImportar} className="hidden" />
-          <button onClick={handleAjustar} disabled={recalculando || items.length === 0}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-faro-text hover:bg-white/[0.04] transition-colors disabled:opacity-50">
-            {recalculando ? (<span className="animate-spin">⏳</span>) : (<Calculator className="w-4 h-4" />)}
-            {recalculando ? "Recalculando..." : "Ajustar"}
-          </button>
-        <button onClick={handleExportExcel} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-faro-text hover:bg-white/[0.04] transition-colors ml-auto">
-            <Download className="w-4 h-4" />
-            Exportar Grid
-          </button>
-        </div>
-      )}
 
       {showEntidades && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { setShowEntidades(false); setEntidadForm(null); setEntidadSearch(""); }}>

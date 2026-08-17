@@ -15,8 +15,9 @@ import type { User } from "@/lib/types";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (email: string, password: string, name: string) => Promise<User>;
+  refreshUser: () => Promise<User>;
   logout: () => void;
 }
 
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     const user = await api.auth.me();
     setUser(user);
+    return user;
   }, [persistToken]);
 
   const register = useCallback(async (email: string, password: string, name: string) => {
@@ -67,7 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     const user = await api.auth.me();
     setUser(user);
+    return user;
   }, [persistToken]);
+
+  const refreshUser = useCallback(async () => {
+    const user = await api.auth.me();
+    setUser(user);
+    return user;
+  }, []);
 
   const logout = useCallback(() => {
     persistToken(null);
@@ -76,8 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persistToken]);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout }),
-    [user, loading, login, register, logout]
+    () => ({ user, loading, login, register, refreshUser, logout }),
+    [user, loading, login, register, refreshUser, logout]
   );
 
   return (

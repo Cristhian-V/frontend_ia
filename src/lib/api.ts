@@ -49,13 +49,19 @@ export const api = {
       }),
 
     login: (body: { email: string; password: string }) =>
-      request<{ access_token: string; token_type: string }>("/auth/login", {
+      request<{ access_token: string; token_type: string; must_change_password: boolean }>("/auth/login", {
         method: "POST",
         body: JSON.stringify(body),
       }),
 
     me: () =>
       request<User>("/auth/me"),
+
+    changePassword: (oldPassword: string, newPassword: string) =>
+      request<{ status: string }>("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+      }),
   },
 
   documents: {
@@ -147,6 +153,7 @@ export const api = {
       password: string;
       full_name: string;
       is_admin?: boolean;
+      usuario_integre?: number | null;
       tools?: ToolEntry[];
     }) =>
       request<{ id: number }>("/admin/users", {
@@ -160,6 +167,7 @@ export const api = {
         full_name?: string;
         password?: string;
         is_admin?: boolean;
+        usuario_integre?: number | null;
         tools?: ToolEntry[];
       }
     ) =>
