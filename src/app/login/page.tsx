@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Logo from "@/components/Logo";
 
@@ -75,13 +74,6 @@ export default function LoginPage() {
           >
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
-
-          <p className="mt-4 text-center text-sm text-faro-text">
-            No tienes cuenta?{" "}
-            <Link href="/register" className="font-medium text-cyan-400 hover:text-cyan-300">
-              Registrate
-            </Link>
-          </p>
         </form>
       </div>
     </div>
