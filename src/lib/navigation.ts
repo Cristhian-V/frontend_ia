@@ -13,6 +13,7 @@ import {
   Tag,
   FolderTree,
   FileSearch,
+  ShieldAlert,
   Settings,
   Users,
 } from "lucide-react";
@@ -68,6 +69,14 @@ export const allSections: NavSection[] = [
     icon: FolderTree,
     items: [
       { label: "Operaciones XML", href: "/dashboard/fnning/operaciones-xml", icon: FileSearch },
+    ],
+  },
+  {
+    key: TOOL_KEYS[4],
+    label: TOOL_LABELS[TOOL_KEYS[4]],
+    icon: ShieldAlert,
+    items: [
+      { label: "Validación de aranceles", href: "/dashboard/admin-finning/validacion-aranceles", icon: ShieldAlert },
     ],
   },
 ];

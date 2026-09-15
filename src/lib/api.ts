@@ -46,22 +46,22 @@ export const api = {
       request<{ access_token: string; token_type: string }>("/auth/register", {
         method: "POST",
         body: JSON.stringify(body),
-      }),
+      }, ADMIN_API_BASE),
 
     login: (body: { email: string; password: string }) =>
       request<{ access_token: string; token_type: string; must_change_password: boolean }>("/auth/login", {
         method: "POST",
         body: JSON.stringify(body),
-      }),
+      }, ADMIN_API_BASE),
 
     me: () =>
-      request<User>("/auth/me"),
+      request<User>("/auth/me", {}, ADMIN_API_BASE),
 
     changePassword: (oldPassword: string, newPassword: string) =>
       request<{ status: string }>("/auth/change-password", {
         method: "POST",
         body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
-      }),
+      }, ADMIN_API_BASE),
   },
 
   documents: {
@@ -255,7 +255,7 @@ export const api = {
         formData.append("archivo", file);
 
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", `${API_BASE}/transbel/clasificar`);
+        xhr.open("POST", `${ADMIN_API_BASE}/transbel/clasificar`);
         if (authToken) xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
 
         xhr.onload = () => {
@@ -346,5 +346,39 @@ export const api = {
       delete: (id: number) =>
         request<{ detail: string }>(`/fnning/entidades/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
     },
+  },
+  adminFinning: {
+    estado: () =>
+      request<{ total: number; vacia: boolean }>("/admin-finning/estado", {}, ADMIN_API_BASE),
+    cargarExcel: (file: File) => {
+      const formData = new FormData();
+      formData.append("excel", file);
+      return fetch(`${ADMIN_API_BASE}/admin-finning/cargar-excel`, {
+        method: "POST",
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        body: formData,
+      }).then((r) => {
+        if (!r.ok) return r.json().then((d) => { throw new Error(d.detail || "Error al cargar"); });
+        return r.json() as Promise<{ insertados: number }>;
+      });
+    },
+    validacion: () =>
+      request<{ codigo_sap: string; codigo_mod: string; n: number; partidas: { codigo: string; descripcion: string }[] }[]>(
+        "/admin-finning/validacion",
+        {},
+        ADMIN_API_BASE
+      ),
+    items: (codigoSap: string) =>
+      request<Record<string, unknown>[]>(
+        `/admin-finning/items?codigo_sap=${encodeURIComponent(codigoSap)}`,
+        {},
+        ADMIN_API_BASE
+      ),
+    resolver: (codigoSap: string, partidaArancel: string) =>
+      request<{ status: string; actualizados: number }>(
+        "/admin-finning/resolver",
+        { method: "POST", body: JSON.stringify({ codigo_sap: codigoSap, partida_arancel: partidaArancel }) },
+        ADMIN_API_BASE
+      ),
   },
 };
