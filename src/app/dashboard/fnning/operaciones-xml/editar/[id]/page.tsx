@@ -121,6 +121,13 @@ export default function EditarOperacionPage() {
       { key: "ImpSIDUNEA", itemField: "SIDUNEA", diff: (getOp("ImpSIDUNEA") || 0) - sumItems("SIDUNEA") },
     ];
   }, [items, operacion]);
+
+  const gaDescuadre = useMemo(() => {
+    const opGA = Math.round(Number(operacion["GA"]) || 0);
+    const sumItemsGA = items.reduce((acc, it) => acc + Math.round(Number(it["GA"]) || 0), 0);
+    return opGA - sumItemsGA;
+  }, [items, operacion]);
+
   const [dateValues, setDateValues] = useState<Record<string, Date | null>>({});
   const [expanded, setExpanded] = useState<Set<string>>(
     new Set(["operaciones", "cabecera", "valores", "items"])
@@ -601,6 +608,11 @@ export default function EditarOperacionPage() {
       {success && (
         <div className="mb-4 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-1.5 text-sm text-green-400">
           {success}
+        </div>
+      )}
+      {items.length > 0 && gaDescuadre !== 0 && (
+        <div className="mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-sm text-amber-400">
+          El GA de la operacion no cuadra con la suma de los items (diferencia: {gaDescuadre}). Ejecuta "Ajustar" para cuadrar.
         </div>
       )}
 
