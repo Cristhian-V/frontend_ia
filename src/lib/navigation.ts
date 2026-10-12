@@ -16,6 +16,11 @@ import {
   ShieldAlert,
   Settings,
   Users,
+  RefreshCw,
+  ClipboardList,
+  FileSpreadsheet,
+  BookOpen,
+  BarChart3,
 } from "lucide-react";
 import { TOOL_KEYS, TOOL_LABELS, ROLES } from "./tools";
 import type { User } from "./types";
@@ -61,6 +66,7 @@ export const allSections: NavSection[] = [
     icon: Package,
     items: [
       { label: "Clasificador Arancelario", href: "/dashboard/transbel/clasificador", icon: Tag },
+      { label: "Sincronización 3PL", href: "/dashboard/transbel/sincronizacion", icon: RefreshCw },
     ],
   },
   {
@@ -77,6 +83,16 @@ export const allSections: NavSection[] = [
     icon: ShieldAlert,
     items: [
       { label: "Validación de aranceles", href: "/dashboard/admin-finning/validacion-aranceles", icon: ShieldAlert },
+    ],
+  },
+  {
+    key: TOOL_KEYS[5],
+    label: TOOL_LABELS[TOOL_KEYS[5]],
+    icon: ClipboardList,
+    items: [
+      { label: "Rep. SUMA", href: "/dashboard/control/suma", icon: FileSpreadsheet },
+      { label: "Contabilidad", href: "/dashboard/control/contabilidad", icon: BookOpen },
+      { label: "Resultado", href: "/dashboard/control/resultado", icon: BarChart3 },
     ],
   },
 ];

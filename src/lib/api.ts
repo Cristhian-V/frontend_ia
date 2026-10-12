@@ -1,7 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
-import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad } from "./types";
+import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary } from "./types";
 
 let authToken: string | null = null;
 
@@ -279,6 +279,36 @@ export const api = {
         xhr.responseType = "blob";
         xhr.send(formData);
       }),
+
+    click: {
+      pendientes: (limit = 100) =>
+        request<{ total: number; operaciones: Record<string, unknown>[] }>(
+          `/transbel/click/pendientes?limit=${limit}`,
+          {},
+          ADMIN_API_BASE
+        ),
+      backfill: (body: { limit?: number; dryRun?: boolean }) =>
+        request<Record<string, unknown>>(
+          "/transbel/click/backfill",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+    },
+
+    sincronizacion: {
+      pendientes: (limit = 200) =>
+        request<{ total: number; completos: number; pendientes: TransbelSincPendiente[] }>(
+          `/transbel/sincronizacion/pendientes?limit=${limit}`,
+          {},
+          ADMIN_API_BASE
+        ),
+      enviar: (operacionIds?: number[]) =>
+        request<{ enviados: number; omitidos: number; operaciones: number[]; detalle?: string }>(
+          "/transbel/sincronizacion/enviar",
+          { method: "POST", body: JSON.stringify({ operacionIds }) },
+          ADMIN_API_BASE
+        ),
+    },
   },
   fnning: {
     list: (page = 1, size = 30) =>
@@ -381,4 +411,79 @@ export const api = {
         ADMIN_API_BASE
       ),
   },
+  control: {
+    suma: {
+      importar: (file: File) => {
+        const formData = new FormData();
+        formData.append("archivo", file);
+        return fetch(`${ADMIN_API_BASE}/control/suma/import`, {
+          method: "POST",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+          body: formData,
+        }).then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.detail || "Error al importar");
+          return data as ControlImportSummary;
+        });
+      },
+    },
+    operaciones: {
+      list: (params: {
+        page?: number;
+        size?: number;
+        fecha_desde?: string;
+        fecha_hasta?: string;
+        cliente?: string;
+        regimen?: string;
+        canal?: string;
+      } = {}) =>
+        request<{ data: ControlOperacion[]; total: number; page: number; pages: number }>(
+          `/control/operaciones?${buildQs(params)}`,
+          {},
+          ADMIN_API_BASE
+        ),
+      update: (id: number, body: Partial<ControlOperacion>) =>
+        request<ControlOperacion>(
+          `/control/operaciones/${id}`,
+          { method: "PATCH", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      refreshIntegre: (id: number) =>
+        request<{ actualizado: boolean; detalle?: string; operacion?: ControlOperacion }>(
+          `/control/operaciones/${id}/refresh-integre`,
+          { method: "POST" },
+          ADMIN_API_BASE
+        ),
+    },
+    resultado: (params: {
+      fecha_desde?: string;
+      fecha_hasta?: string;
+      cliente?: string;
+      regimen?: string;
+      canal?: string;
+      limit?: number;
+    } = {}) =>
+      request<{ total: number; data: ControlResultadoRow[] }>(
+        `/control/resultado?${buildQs(params)}`,
+        {},
+        ADMIN_API_BASE
+      ),
+    clientes: () =>
+      request<{ nit: string; nombre: string }[]>("/control/clientes", {}, ADMIN_API_BASE),
+    filtros: () =>
+      request<{
+        regimenes: string[];
+        canales: string[];
+        clientes: { nit: string; nombre: string }[];
+      }>("/control/filtros", {}, ADMIN_API_BASE),
+  },
 };
+
+function buildQs(params: Record<string, string | number | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    qs.set(key, String(value));
+  }
+  return qs.toString();
+}

@@ -70,6 +70,89 @@ export interface OperacionXml {
   FechaMod: string | null;
 }
 
+export interface TransbelRecord {
+  ENTREGA: string;
+  FLIBER: string;
+  FULTDOC: string;
+  FNACIONAL: string;
+  FETLAA: string;
+  CODEXC_AA: string;
+  FETL_TL: string;
+  FENTCDP: string;
+  CODEXC_TL: string;
+}
+
+export interface TransbelSincPendiente {
+  operacionId: number;
+  entrega: string;
+  nroRegistro: string;
+  gestion: number;
+  recinto: number;
+  nroDui: string;
+  canal: string;
+  completo: boolean;
+  motivo: string;
+  record: TransbelRecord;
+}
+
+export interface ControlOperacion {
+  id: number;
+  dim: string;
+  gestion: number | null;
+  aduana: number | null;
+  dui: string | null;
+  aduana_codigo: string | null;
+  aduana_descripcion: string | null;
+  fecha_aceptacion: string | null;
+  estado: string | null;
+  nit_declarante: string | null;
+  razon_social_declarante: string | null;
+  nro_referencia: string | null;
+  destino_regimen_codigo: string | null;
+  destino_regimen_descripcion: string | null;
+  modalidad_regimen_codigo: string | null;
+  modalidad_regimen_descripcion: string | null;
+  modalidad_despacho: string | null;
+  total_items: number | null;
+  nit_importador: string | null;
+  razon_social_importador: string | null;
+  valor_cif: number | null;
+  peso_bruto: number | null;
+  tributos: number | null;
+  rup_pago: string | null;
+  fecha_pago: string | null;
+  canal: string | null;
+  fecha_asignacion_canal: string | null;
+  fecha_levante: string | null;
+  fecha_regularizacion: string | null;
+  fecha_conclusion: string | null;
+  regimen: string | null;
+  dui_due: string | null;
+  liquidador: string | null;
+  planilla: number | null;
+  planillado: number | null;
+  planillador: string | null;
+  observaciones: string | null;
+  fecha_reporte_pago: string | null;
+  archivo_origen: string | null;
+  cliente_nombre: string | null;
+}
+
+export interface ControlResultadoRow extends ControlOperacion {
+  mes: string;
+  cat: string;
+  dias: number | string;
+  cancel_plazo: number | string;
+}
+
+export interface ControlImportSummary {
+  total: number;
+  creados: number;
+  actualizados: number;
+  clientes: number;
+  fecha_reporte_pago: string | null;
+}
+
 export interface Entidad {
   EntidadId: number;
   TipoEntidadId: string;
