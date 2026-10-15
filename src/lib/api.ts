@@ -1,7 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
-import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary } from "./types";
+import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
 
 let authToken: string | null = null;
 
@@ -461,6 +461,7 @@ export const api = {
       cliente?: string;
       regimen?: string;
       canal?: string;
+      estado?: string[];
       limit?: number;
     } = {}) =>
       request<{ total: number; data: ControlResultadoRow[] }>(
@@ -475,15 +476,46 @@ export const api = {
         regimenes: string[];
         canales: string[];
         clientes: { nit: string; nombre: string }[];
+        estados: string[];
       }>("/control/filtros", {}, ADMIN_API_BASE),
+    clic: {
+      sync: (body: { dryRun?: boolean; limit?: number } = {}) =>
+        request<{
+          dryRun?: boolean;
+          pendientes?: number;
+          procesadas?: number;
+          actualizadas?: number;
+          sin_canal?: number;
+          errores?: number;
+        }>("/control/clic/sync", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      syncStart: (body: { limit?: number } = {}) =>
+        request<{ started: boolean; reason?: string }>(
+          "/control/clic/sync/start",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      progress: () => request<ControlClicProgress>("/control/clic/progress", {}, ADMIN_API_BASE),
+      estado: () =>
+        request<{ sin_canal: number; ultima_sync: string | null }>(
+          "/control/clic/estado",
+          {},
+          ADMIN_API_BASE
+        ),
+    },
   },
 };
 
-function buildQs(params: Record<string, string | number | undefined>): string {
+function buildQs(params: Record<string, string | number | string[] | undefined>): string {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;
-    qs.set(key, String(value));
+    if (Array.isArray(value)) {
+      for (const v of value) {
+        if (v !== undefined && v !== null && v !== "") qs.append(key, String(v));
+      }
+    } else {
+      qs.set(key, String(value));
+    }
   }
   return qs.toString();
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import type { ControlOperacion } from "@/lib/types";
-import { RefreshCw, Save, UserCog } from "lucide-react";
+import type { ControlOperacion, ControlClicProgress } from "@/lib/types";
+import { RefreshCw, Save, UserCog, CloudDownload } from "lucide-react";
 
 type Draft = Partial<ControlOperacion>;
 
@@ -31,6 +31,10 @@ export default function ContabilidadPage() {
     canales: string[];
     clientes: { nit: string; nombre: string }[];
   }>({ regimenes: [], canales: [], clientes: [] });
+  const [progress, setProgress] = useState<ControlClicProgress | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const pollRef = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,6 +62,60 @@ export default function ContabilidadPage() {
       .then(setOptions)
       .catch(() => {});
   }, []);
+
+  const stopPolling = () => {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
+
+  useEffect(() => () => stopPolling(), []);
+
+  const startPolling = () => {
+    stopPolling();
+    pollRef.current = window.setInterval(async () => {
+      try {
+        const p = await api.control.clic.progress();
+        setProgress(p);
+        if (!p.running && (p.phase === "done" || p.phase === "error")) {
+          stopPolling();
+          setSyncing(false);
+          await load();
+        }
+      } catch {
+        /* sigue intentando */
+      }
+    }, 1000);
+  };
+
+  const runClicSync = async () => {
+    setError("");
+    setMessage("");
+    setShowOverlay(true);
+    setSyncing(true);
+    setProgress({
+      running: true,
+      phase: "start",
+      total: 0,
+      processed: 0,
+      updated: 0,
+      sin_canal: 0,
+      errores: 0,
+      currentDim: null,
+      startedAt: null,
+      finishedAt: null,
+      error: null,
+    });
+    try {
+      await api.control.clic.syncStart();
+      startPolling();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar la sincronización");
+      setSyncing(false);
+      setShowOverlay(false);
+    }
+  };
 
   const value = (row: ControlOperacion, field: keyof ControlOperacion) => {
     const draft = drafts[row.id];
@@ -114,6 +172,13 @@ export default function ContabilidadPage() {
     "rounded-lg border border-faro-border bg-faro-surface px-2 py-1.5 text-sm text-faro-text";
   const inputCls =
     "w-full rounded border border-faro-border bg-transparent px-2 py-1 text-xs text-faro-text focus:outline-none focus:border-blue-500";
+  const pct = progress
+    ? progress.total > 0
+      ? Math.round((progress.processed / progress.total) * 100)
+      : progress.running
+      ? 5
+      : 100
+    : 0;
 
   return (
     <div>
@@ -216,6 +281,14 @@ export default function ContabilidadPage() {
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Actualizar
         </button>
+        <button
+          onClick={runClicSync}
+          disabled={syncing}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+        >
+          <CloudDownload className={`w-4 h-4 ${syncing ? "animate-pulse" : ""}`} />
+          Sincronizar canal (CLICK)
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-faro-border bg-faro-surface">
@@ -231,6 +304,7 @@ export default function ContabilidadPage() {
               <th className="px-3 py-2">Planilla</th>
               <th className="px-3 py-2">Planillado</th>
               <th className="px-3 py-2">Planillador</th>
+              <th className="px-3 py-2">F. de Canal</th>
               <th className="px-3 py-2">F. Regularización</th>
               <th className="px-3 py-2">Observaciones</th>
               <th className="px-3 py-2"></th>
@@ -259,6 +333,9 @@ export default function ContabilidadPage() {
                   </td>
                   <td className="px-3 py-2">
                     <input value={value(row, "planillador")} onChange={(e) => setField(row, "planillador", e.target.value)} className={inputCls} />
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-faro-text/80">
+                    {row.fecha_asignacion_canal || "—"}
                   </td>
                   <td className="px-3 py-2">
                     <input type="date" value={value(row, "fecha_regularizacion")} onChange={(e) => setField(row, "fecha_regularizacion", e.target.value)} className={inputCls} />
@@ -291,14 +368,14 @@ export default function ContabilidadPage() {
             })}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={12} className="px-3 py-8 text-center text-faro-text/60">
+                <td colSpan={13} className="px-3 py-8 text-center text-faro-text/60">
                   No hay operaciones registradas.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={12} className="px-3 py-8 text-center text-faro-text/60">
+                <td colSpan={13} className="px-3 py-8 text-center text-faro-text/60">
                   Cargando...
                 </td>
               </tr>
@@ -329,6 +406,58 @@ export default function ContabilidadPage() {
           </button>
         </div>
       </div>
+
+      {showOverlay && progress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-faro-border bg-faro-surface p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-faro-textlight">
+              Sincronización de canal (CLICK)
+            </h3>
+            <p className="mt-1 text-xs text-faro-text/70">
+              {progress.running
+                ? "Consultando el CLICK…"
+                : progress.phase === "error"
+                ? "Terminó con error"
+                : "Completado"}
+            </p>
+
+            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-faro-text">
+              <span>
+                {progress.processed}/{progress.total || "…"}
+              </span>
+              <span>{pct}%</span>
+            </div>
+
+            <div className="mt-3 text-xs text-faro-text">
+              DIM en consulta:{" "}
+              <span className="font-mono text-faro-textlight">
+                {progress.currentDim || "—"}
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-faro-text/80">
+              Actualizadas: {progress.updated} · Sin canal: {progress.sin_canal} · Errores:{" "}
+              {progress.errores}
+            </div>
+            {progress.error && <p className="mt-2 text-xs text-red-400">{progress.error}</p>}
+
+            <button
+              onClick={() => {
+                if (!progress.running) setShowOverlay(false);
+              }}
+              disabled={progress.running}
+              className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+            >
+              {progress.running ? "Procesando…" : "Cerrar"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

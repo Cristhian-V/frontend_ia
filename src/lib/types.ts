@@ -143,6 +143,22 @@ export interface ControlResultadoRow extends ControlOperacion {
   cat: string;
   dias: number | string;
   cancel_plazo: number | string;
+  fecha_limite: string | null;
+  semaforo: "verde" | "amarillo" | "rojo" | null;
+}
+
+export interface ControlClicProgress {
+  running: boolean;
+  phase: string;
+  total: number;
+  processed: number;
+  updated: number;
+  sin_canal: number;
+  errores: number;
+  currentDim: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
 }
 
 export interface ControlImportSummary {
