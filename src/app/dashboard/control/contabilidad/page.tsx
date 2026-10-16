@@ -9,6 +9,9 @@ import { RefreshCw, Save, UserCog, CloudDownload } from "lucide-react";
 
 type Draft = Partial<ControlOperacion>;
 
+const esRegularizable = (regimen: string | null) =>
+  regimen === "IMA 4" || regimen === "IMI 4";
+
 export default function ContabilidadPage() {
   const [rows, setRows] = useState<ControlOperacion[]>([]);
   const [drafts, setDrafts] = useState<Record<number, Draft>>({});
@@ -338,7 +341,13 @@ export default function ContabilidadPage() {
                     {row.fecha_asignacion_canal || "—"}
                   </td>
                   <td className="px-3 py-2">
-                    <input type="date" value={value(row, "fecha_regularizacion")} onChange={(e) => setField(row, "fecha_regularizacion", e.target.value)} className={inputCls} />
+                    {esRegularizable(row.regimen) ? (
+                      <input type="date" value={value(row, "fecha_regularizacion")} onChange={(e) => setField(row, "fecha_regularizacion", e.target.value)} className={inputCls} />
+                    ) : (
+                      <span className="text-faro-text/40" title="Solo aplica a IMA 4 / IMI 4">
+                        —
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <input value={value(row, "observaciones")} onChange={(e) => setField(row, "observaciones", e.target.value)} className={inputCls} />
