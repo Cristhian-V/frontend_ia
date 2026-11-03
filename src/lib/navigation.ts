@@ -21,6 +21,9 @@ import {
   FileSpreadsheet,
   BookOpen,
   BarChart3,
+  CalendarDays,
+  CalendarRange,
+  CalendarCheck,
 } from "lucide-react";
 import { TOOL_KEYS, TOOL_LABELS, ROLES } from "./tools";
 import type { User } from "./types";
@@ -93,6 +96,16 @@ export const allSections: NavSection[] = [
       { label: "Rep. SUMA", href: "/dashboard/control/suma", icon: FileSpreadsheet },
       { label: "Contabilidad", href: "/dashboard/control/contabilidad", icon: BookOpen },
       { label: "Resultado", href: "/dashboard/control/resultado", icon: BarChart3 },
+    ],
+  },
+  {
+    key: TOOL_KEYS[6],
+    label: TOOL_LABELS[TOOL_KEYS[6]],
+    icon: CalendarDays,
+    items: [
+      { label: "Cronograma", href: "/dashboard/vacaciones", icon: CalendarRange },
+      { label: "Funcionarios", href: "/dashboard/vacaciones/funcionarios", icon: CalendarCheck },
+      { label: "Días tomados", href: "/dashboard/vacaciones/dias-tomados", icon: CalendarDays },
     ],
   },
 ];

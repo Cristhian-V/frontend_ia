@@ -2,6 +2,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
 import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
+import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo } from "./types";
 
 let authToken: string | null = null;
 
@@ -501,6 +502,123 @@ export const api = {
           {},
           ADMIN_API_BASE
         ),
+    },
+  },
+  vacaciones: {
+    funcionarios: (gestion: number) =>
+      request<VacFuncionario[]>(`/vacaciones/funcionarios?gestion=${gestion}`, {}, ADMIN_API_BASE),
+    candidatos: () =>
+      request<VacCandidato[]>("/vacaciones/candidatos", {}, ADMIN_API_BASE),
+    updateFuncionario: (usuarioId: number, body: Record<string, unknown>) =>
+      request<{ usuarioId: number }>(`/vacaciones/funcionarios/${usuarioId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }, ADMIN_API_BASE),
+    recalcular: (usuarioId: number, gestion: number) =>
+      request<VacRecalculo>(`/vacaciones/funcionarios/${usuarioId}/recalcular`, {
+        method: "POST",
+        body: JSON.stringify({ gestion }),
+      }, ADMIN_API_BASE),
+    saldosIniciales: (items: unknown[]) =>
+      request<{ guardados: number }>("/vacaciones/saldos-iniciales", {
+        method: "POST",
+        body: JSON.stringify({ items }),
+      }, ADMIN_API_BASE),
+    ajustes: {
+      list: (usuarioId?: number, gestion?: number) => {
+        const qs = new URLSearchParams();
+        if (usuarioId) qs.set("usuarioId", String(usuarioId));
+        if (gestion) qs.set("gestion", String(gestion));
+        return request<VacAjuste[]>(`/vacaciones/ajustes?${qs.toString()}`, {}, ADMIN_API_BASE);
+      },
+      create: (body: Record<string, unknown>) =>
+        request<VacAjuste>("/vacaciones/ajustes", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      update: (id: number, body: Record<string, unknown>) =>
+        request<VacAjuste>(`/vacaciones/ajustes/${id}`, { method: "PATCH", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      delete: (id: number) =>
+        request<{ ok: boolean }>(`/vacaciones/ajustes/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+    },
+    cronograma: (gestion: number) =>
+      request<VacCronograma>(`/vacaciones/cronograma?gestion=${gestion}`, {}, ADMIN_API_BASE),
+    planEstado: (gestion: number) =>
+      request<VacPlanEstado>(`/vacaciones/cronograma/estado?gestion=${gestion}`, {}, ADMIN_API_BASE),
+    generar: (gestion: number, confirmar = false) =>
+      request<{ gestion: number; generados: number; reemplazados: number; conflictos: VacConflicto[] }>(
+        "/vacaciones/cronograma/generar",
+        { method: "POST", body: JSON.stringify({ gestion, confirmar }) },
+        ADMIN_API_BASE
+      ),
+    crearBloque: (body: Record<string, unknown>) =>
+      request<VacBloque>("/vacaciones/planes", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+    editarBloque: (id: number, body: Record<string, unknown>) =>
+      request<VacBloque>(`/vacaciones/planes/${id}`, { method: "PATCH", body: JSON.stringify(body) }, ADMIN_API_BASE),
+    eliminarBloque: (id: number) =>
+      request<{ ok: boolean }>(`/vacaciones/planes/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+    bloquear: (gestion: number) =>
+      request<VacPlanEstado>("/vacaciones/cronograma/bloquear", { method: "POST", body: JSON.stringify({ gestion }) }, ADMIN_API_BASE),
+    desbloquear: (gestion: number) =>
+      request<VacPlanEstado>("/vacaciones/cronograma/desbloquear", { method: "POST", body: JSON.stringify({ gestion }) }, ADMIN_API_BASE),
+    diasTomados: (gestion: number, incluirInactivas = false) =>
+      request<VacDiasTomados>(
+        `/vacaciones/dias-tomados?gestion=${gestion}&incluirInactivas=${incluirInactivas}`,
+        {},
+        ADMIN_API_BASE
+      ),
+    actualizarLicencia: (id: number, body: Record<string, unknown>) =>
+      request<VacLicenciaOverrideResponse>(`/vacaciones/licencias/${id}`, { method: "PATCH", body: JSON.stringify(body) }, ADMIN_API_BASE),
+    conflictos: (gestion: number) =>
+      request<{ gestion: number; grupos: VacGrupo[]; conflictos: VacConflicto[] }>(
+        `/vacaciones/conflictos?gestion=${gestion}`,
+        {},
+        ADMIN_API_BASE
+      ),
+    grupos: {
+      list: () => request<VacGrupo[]>("/vacaciones/grupos", {}, ADMIN_API_BASE),
+      create: (body: Record<string, unknown>) =>
+        request<VacGrupo>("/vacaciones/grupos", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      update: (id: number, body: Record<string, unknown>) =>
+        request<VacGrupo>(`/vacaciones/grupos/${id}`, { method: "PUT", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      delete: (id: number) =>
+        request<{ ok: boolean }>(`/vacaciones/grupos/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+    },
+    categorias: {
+      list: () => request<VacCategoria[]>("/vacaciones/categorias", {}, ADMIN_API_BASE),
+      create: (body: Record<string, unknown>) =>
+        request<VacCategoria>("/vacaciones/categorias", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      update: (id: number, body: Record<string, unknown>) =>
+        request<VacCategoria>(`/vacaciones/categorias/${id}`, { method: "PATCH", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      delete: (id: number) =>
+        request<{ ok: boolean }>(`/vacaciones/categorias/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+    },
+    feriados: {
+      list: (gestion: number) =>
+        request<VacFeriado[]>(`/vacaciones/feriados?gestion=${gestion}`, {}, ADMIN_API_BASE),
+      create: (body: Record<string, unknown>) =>
+        request<VacFeriado>("/vacaciones/feriados", { method: "POST", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      update: (id: number, body: Record<string, unknown>) =>
+        request<VacFeriado>(`/vacaciones/feriados/${id}`, { method: "PATCH", body: JSON.stringify(body) }, ADMIN_API_BASE),
+      delete: (id: number) =>
+        request<{ ok: boolean }>(`/vacaciones/feriados/${id}`, { method: "DELETE" }, ADMIN_API_BASE),
+    },
+    importar: {
+      preview: (file: File) => {
+        const formData = new FormData();
+        formData.append("archivo", file);
+        return fetch(`${ADMIN_API_BASE}/vacaciones/importar/preview`, {
+          method: "POST",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+          body: formData,
+        }).then(async (r) => {
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.detail || "Error al leer el Excel");
+          return data as VacImportPreview;
+        });
+      },
+      apply: (body: unknown) =>
+        request<VacImportResult>("/vacaciones/importar/apply", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }, ADMIN_API_BASE),
     },
   },
 };

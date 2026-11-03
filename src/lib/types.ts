@@ -186,3 +186,229 @@ export interface Entidad {
   FechaModificacion: string;
   Activo: boolean;
 }
+
+
+export type VacEstadoColor = "verde" | "ambar" | "rojo" | "gris";
+
+export interface VacAntiguedad {
+  anios: number;
+  meses: number;
+  dias: number;
+}
+
+export interface VacSaldoInicial {
+  gestion: number;
+  diasCorresponden: number;
+  diasPendientes: number;
+  diasPagados: number;
+  notas: string | null;
+}
+
+export interface VacCategoria {
+  id: number;
+  nombre: string;
+  color: string;
+  activo: boolean;
+}
+
+export interface VacRecalculo {
+  usuarioId: number;
+  gestion: number;
+  diasCorresponden: number;
+  antiguedad: VacAntiguedad | null;
+}
+
+export interface VacFuncionario {
+  usuarioId: number;
+  nombre: string;
+  email: string | null;
+  ci: string | null;
+  sucursalId: number | null;
+  estadoId: string | null;
+  activo: boolean;
+  categoria: string | null;
+  categoriaColor: string;
+  notas: string | null;
+  fechaIngreso: string | null;
+  antiguedad: VacAntiguedad | null;
+  sinConfigurar: boolean;
+  corresponden: number;
+  arrastre: number;
+  disponible: number;
+  tomado: number;
+  pagados: number;
+  ajustes: number;
+  planificado: number;
+  porPlanificar: number;
+  saldoCierre: number;
+  estadoColor: VacEstadoColor;
+  saldoInicial: VacSaldoInicial | null;
+}
+
+export interface VacBloque {
+  id: number;
+  usuarioId: number;
+  nombre: string;
+  gestion: number;
+  fechaDesde: string;
+  fechaHasta: string;
+  diasPlanificados: number;
+  origen: "auto" | "manual" | "importado";
+  notas: string | null;
+  estadoColor: VacEstadoColor;
+  categoriaColor: string;
+  conflicto: boolean;
+}
+
+export interface VacPlanEstado {
+  gestion: number;
+  estado: "borrador" | "bloqueado";
+  bloqueadoPor: number | null;
+  bloqueadoAt: string | null;
+}
+
+export interface VacFeriado {
+  id: number;
+  fecha: string;
+  descripcion: string;
+  ambito: "nacional" | "departamental";
+  descuenta: boolean;
+}
+
+export interface VacConflicto {
+  grupoId: number;
+  grupoNombre: string;
+  usuarioA: number;
+  usuarioB: number;
+  nombreA: string;
+  nombreB: string;
+  desde: string;
+  hasta: string;
+  dias: number;
+  origen: "plan" | "licencia" | "mixto";
+}
+
+export interface VacGrupoMiembro {
+  usuarioId: number;
+  nombre: string;
+}
+
+export interface VacGrupo {
+  id: number;
+  nombre: string;
+  cliente: string | null;
+  notas: string | null;
+  miembros: VacGrupoMiembro[];
+}
+
+export interface VacCronograma {
+  gestion: number;
+  estado: VacPlanEstado;
+  funcionarios: VacFuncionario[];
+  bloques: VacBloque[];
+  conflictos: VacConflicto[];
+  categorias: VacCategoria[];
+  feriados: VacFeriado[];
+}
+
+export interface VacLicencia {
+  id: number;
+  usuarioId: number;
+  nombre: string;
+  fechaDesde: string;
+  fechaHasta: string;
+  activo: boolean;
+  comentarios: string | null;
+  diasCalculados: number;
+  diasComputados: number;
+  override: {
+    diasComputados: number | null;
+    incluida: boolean;
+    notas: string | null;
+  } | null;
+}
+
+export interface VacDiasTomados {
+  gestion: number;
+  licencias: VacLicencia[];
+  total: number;
+}
+
+export interface VacCandidato {
+  usuarioId: number;
+  nombre: string;
+  email: string | null;
+  ci: string | null;
+  sucursalId: number | null;
+  estadoId: string | null;
+}
+
+export interface VacImportOpcion {
+  usuarioId: number;
+  nombre: string;
+  ci: string | null;
+}
+
+export interface VacImportRosterRow {
+  fila: number;
+  ci: string | null;
+  nombre: string;
+  nombreNorm: string;
+  cargo: string | null;
+  fechaIngreso: string | null;
+  dias: number | null;
+  usuarioId: number | null;
+  nombreIntegre: string | null;
+  categoria?: string | null;
+  estado: "ok" | "duplicado" | "no_encontrado";
+  opciones: VacImportOpcion[];
+}
+
+export interface VacImportPlanRow {
+  gestion: number;
+  nombreRaw: string;
+  nombreNorm: string;
+  fechaDesde: string;
+  fechaHasta: string;
+  dias: number;
+  usuarioId: number | null;
+  nombreIntegre: string | null;
+  estado: "ok" | "duplicado" | "no_encontrado";
+  opciones: VacImportOpcion[];
+}
+
+export interface VacImportPreview {
+  archivoHash: string;
+  roster: VacImportRosterRow[];
+  planes: VacImportPlanRow[];
+  resumen: {
+    roster: { total: number; ok: number; duplicados: number; noEncontrados: number };
+    planes: { total: number; ok: number; duplicados: number; noEncontrados: number };
+  };
+}
+
+export interface VacImportResult {
+  rosterCreados: number;
+  rosterActualizados: number;
+  planesCreados: number;
+  planesOmitidos: number;
+  errores: string[];
+}
+
+
+export interface VacAjuste {
+  id: number;
+  usuarioId: number;
+  gestion: number;
+  dias: number;
+  tipo: string;
+  motivo: string | null;
+  createdAt?: string;
+}
+
+export interface VacLicenciaOverrideResponse {
+  usuarioLicenciaId: number;
+  diasComputados: number | null;
+  incluida: boolean;
+  notas: string | null;
+}
