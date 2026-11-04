@@ -519,6 +519,12 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ gestion }),
       }, ADMIN_API_BASE),
+    recalcularTodos: (gestion: number) =>
+      request<{ actualizados: number; sinFecha: number[]; gestiones: number[] }>(
+        "/vacaciones/funcionarios/recalcular-todos",
+        { method: "POST", body: JSON.stringify({ gestion }) },
+        ADMIN_API_BASE
+      ),
     saldosIniciales: (items: unknown[]) =>
       request<{ guardados: number }>("/vacaciones/saldos-iniciales", {
         method: "POST",

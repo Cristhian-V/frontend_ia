@@ -96,6 +96,7 @@ export default function FuncionariosVacacionesPage() {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [recalculandoTodos, setRecalculandoTodos] = useState(false);
   const [fechasDraft, setFechasDraft] = useState<Record<number, string>>({});
   const [categorias, setCategorias] = useState<VacCategoria[]>([]);
   const [showCategoria, setShowCategoria] = useState(false);
@@ -333,6 +334,33 @@ export default function FuncionariosVacacionesPage() {
       await loadFuncionarios();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al eliminar la categor?a");
+    }
+  };
+
+  const recalcularTodosFuncionarios = async () => {
+    if (
+      !window.confirm(
+        `Se recalcular?n los d?as de la gesti?n de corte de todos los funcionarios (o ${gestion} si no tienen carga inicial). Se conservan pendientes y pagados. ?Continuar?`
+      )
+    ) {
+      return;
+    }
+    setRecalculandoTodos(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await api.vacaciones.recalcularTodos(gestion);
+      const gestiones = result.gestiones.length
+        ? ` (gesti?n ${result.gestiones.join(", ")})`
+        : "";
+      setMessage(
+        `Recalculados ${result.actualizados} funcionarios${gestiones}. Sin fecha de ingreso: ${result.sinFecha.length}.`
+      );
+      await loadFuncionarios();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al recalcular los d?as");
+    } finally {
+      setRecalculandoTodos(false);
     }
   };
 
@@ -643,6 +671,14 @@ export default function FuncionariosVacacionesPage() {
               <button onClick={openSync} className={buttonSecondary}>
                 <RefreshCw className="h-4 w-4" />
                 Sincronizar
+              </button>
+              <button
+                onClick={recalcularTodosFuncionarios}
+                disabled={recalculandoTodos || loading}
+                className={buttonSecondary}
+              >
+                <RefreshCw className={`h-4 w-4 ${recalculandoTodos ? "animate-spin" : ""}`} />
+                Recalcular todos
               </button>
               <button onClick={() => setShowImport(true)} className={buttonSecondary}>
                 <FileSpreadsheet className="h-4 w-4" />
