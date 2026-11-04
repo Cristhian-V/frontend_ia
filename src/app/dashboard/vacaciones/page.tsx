@@ -8,6 +8,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { EmptyState } from "@/components/EmptyState";
 import type {
   VacBloque,
+  VacCeldaEstado,
   VacCronograma,
   VacEstadoColor,
 } from "@/lib/types";
@@ -38,11 +39,10 @@ const MONTH_NAMES = [
 
 const WEEKDAYS = ["D", "L", "M", "M", "J", "V", "S"];
 
-const COLOR_CLASS: Record<VacEstadoColor, string> = {
-  verde: "bg-emerald-500/85 hover:bg-emerald-500 text-white",
-  ambar: "bg-amber-500/85 hover:bg-amber-500 text-white",
-  rojo: "bg-red-500/85 hover:bg-red-500 text-white",
-  gris: "bg-slate-500/75 hover:bg-slate-500 text-white",
+const CELDA_CLASS: Record<VacCeldaEstado, string> = {
+  tomado: "bg-emerald-400",
+  pagado: "bg-sky-400",
+  pendiente: "bg-slate-400/40",
 };
 
 const COLOR_LABEL: Record<VacEstadoColor, string> = {
@@ -61,6 +61,23 @@ const COLOR_DOT: Record<VacEstadoColor, string> = {
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
+}
+
+function diffDays(desde: string, hasta: string) {
+  return Math.round(
+    (new Date(`${hasta}T00:00:00Z`).getTime() - new Date(`${desde}T00:00:00Z`).getTime()) /
+      86400000
+  );
+}
+
+function textColorForHex(color: string) {
+  const clean = String(color || "").replace("#", "");
+  if (clean.length !== 6) return "#ffffff";
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62 ? "#0f172a" : "#ffffff";
 }
 
 function parseDateParts(value: string) {
@@ -102,6 +119,36 @@ interface MonthBar {
   startDay: number;
   endDay: number;
   lane: number;
+  celdas: VacCeldaEstado[];
+}
+
+function celdasDelSegmento(
+  bloque: VacBloque,
+  year: number,
+  month: number,
+  startDay: number,
+  endDay: number
+): VacCeldaEstado[] {
+  const celdas = bloque.celdas || [];
+  if (celdas.length === 0) return [];
+  const totalDias = diffDays(bloque.fechaDesde, bloque.fechaHasta) + 1;
+  if (totalDias <= 0) return [];
+  const segmentoDesde = `${year}-${pad2(month)}-${pad2(startDay)}`;
+  const segmentoHasta = `${year}-${pad2(month)}-${pad2(endDay)}`;
+  const antes = Math.max(0, diffDays(bloque.fechaDesde, segmentoDesde));
+  const diasSegmento = Math.max(1, diffDays(segmentoDesde, segmentoHasta) + 1);
+  const inicio = Math.max(
+    0,
+    Math.min(celdas.length, Math.round((celdas.length * antes) / totalDias))
+  );
+  const fin = Math.max(
+    inicio,
+    Math.min(
+      celdas.length,
+      Math.round((celdas.length * (antes + diasSegmento)) / totalDias)
+    )
+  );
+  return celdas.slice(inicio, fin);
 }
 
 function barsForMonth(bloques: VacBloque[], year: number, month: number): MonthBar[] {
@@ -131,6 +178,10 @@ function barsForMonth(bloques: VacBloque[], year: number, month: number): MonthB
       return null;
     })
     .filter((item): item is { bloque: VacBloque; startDay: number; endDay: number } => Boolean(item))
+    .map((item) => ({
+      ...item,
+      celdas: celdasDelSegmento(item.bloque, year, month, item.startDay, item.endDay),
+    }))
     .sort((a, b) => a.startDay - b.startDay || b.endDay - a.endDay);
 
   const lanes: number[] = [];
@@ -535,7 +586,7 @@ export default function CronogramaVacacionesPage() {
                       {Array.from({ length: Math.max(laneCount, 1) }, (_, lane) => {
                         const laneBars = bars.filter((bar) => bar.lane === lane);
                         return (
-                          <div key={lane} className="relative mb-1 flex h-10">
+                          <div key={lane} className="relative mb-1 flex h-14">
                             {Array.from({ length: 31 }, (_, i) => {
                               const day = i + 1;
                               const valid = day <= dim;
@@ -552,25 +603,48 @@ export default function CronogramaVacacionesPage() {
                                 />
                               );
                             })}
-                            {laneBars.map((bar) => (
-                              <button
-                                key={bar.bloque.id}
-                                onClick={() => openEdit(bar.bloque)}
-                                title={`${bar.bloque.nombre} · ${bar.bloque.fechaDesde} a ${bar.bloque.fechaHasta} · ${bar.bloque.diasPlanificados} días · ${funcionarioMap.get(bar.bloque.usuarioId)?.categoria || "Sin categoría"}`}
-                                style={{
-                                  left: `${((bar.startDay - 1) / 31) * 100}%`,
-                                  width: `${((bar.endDay - bar.startDay + 1) / 31) * 100}%`,
-                                  borderLeftColor: bar.bloque.categoriaColor || "#64748b",
-                                }}
-                                className={`absolute top-0.5 bottom-0.5 overflow-hidden truncate rounded border-l-4 px-1.5 text-left text-[13px] font-medium shadow-sm ${
-                                  COLOR_CLASS[bar.bloque.conflicto ? "rojo" : bar.bloque.estadoColor]
-                                } ${bar.bloque.conflicto ? "ring-2 ring-red-300" : ""} ${
-                                  locked ? "cursor-default" : ""
-                                }`}
-                              >
-                                {bar.bloque.nombre} · {bar.bloque.diasPlanificados}d
-                              </button>
-                            ))}
+                            {laneBars.map((bar) => {
+                              const f = funcionarioMap.get(bar.bloque.usuarioId);
+                              const celdas = bar.bloque.celdas || [];
+                              const verdes = celdas.filter((c) => c === "tomado").length;
+                              const azules = celdas.filter((c) => c === "pagado").length;
+                              const pendientes = celdas.filter((c) => c === "pendiente").length;
+                              const title = `${bar.bloque.nombre}\n${bar.bloque.fechaDesde} -> ${bar.bloque.fechaHasta}\nCategoria: ${f?.categoria || "Sin categoria"}\nBarra: ${bar.bloque.diasPlanificados} dias\nTomados: ${f?.tomado ?? 0} | Pagados: ${f?.pagados ?? 0} | Ajustes: ${f?.ajustes ?? 0}\nCeldas: ${verdes} verdes, ${azules} azules, ${pendientes} pendientes`;
+                              return (
+                                <button
+                                  key={bar.bloque.id}
+                                  onClick={() => openEdit(bar.bloque)}
+                                  title={title}
+                                  style={{
+                                    left: `${((bar.startDay - 1) / 31) * 100}%`,
+                                    width: `${((bar.endDay - bar.startDay + 1) / 31) * 100}%`,
+                                  }}
+                                  className={`absolute top-1 bottom-1 flex flex-col overflow-hidden rounded text-left shadow-sm ${
+                                    bar.bloque.conflicto ? "ring-2 ring-red-300" : ""
+                                  } ${locked ? "cursor-default" : ""}`}
+                                >
+                                  <div
+                                    className="flex flex-1 items-center gap-1 overflow-hidden px-1.5 text-[13px] font-semibold"
+                                    style={{
+                                      backgroundColor: bar.bloque.categoriaColor || "#64748b",
+                                      color: textColorForHex(bar.bloque.categoriaColor || "#64748b"),
+                                    }}
+                                  >
+                                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${COLOR_DOT[bar.bloque.estadoColor]}`} />
+                                    <span className="truncate">{bar.bloque.nombre}</span>
+                                  </div>
+                                  <div className="flex h-2.5 shrink-0 gap-px bg-black/15 p-px">
+                                    {bar.celdas.length === 0 ? (
+                                      <span className="flex-1 rounded-sm bg-slate-400/40" />
+                                    ) : (
+                                      bar.celdas.map((estado, index) => (
+                                        <span key={index} className={`flex-1 rounded-sm ${CELDA_CLASS[estado]}`} />
+                                      ))
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         );
                       })}
@@ -584,18 +658,35 @@ export default function CronogramaVacacionesPage() {
 
         <aside className="space-y-4">
           <div className="rounded-xl border border-faro-border bg-faro-surface p-4">
-            <h3 className="mb-3 text-sm font-semibold text-faro-textlight">Leyenda</h3>
+            <h3 className="mb-2 text-sm font-semibold text-faro-textlight">Leyenda</h3>
+            <p className="mb-2 text-xs text-faro-text/60">Fondo superior: color de categoria</p>
             <div className="space-y-2">
-              {(["verde", "ambar", "rojo", "gris"] as VacEstadoColor[]).map((color) => (
-                <div key={color} className="flex items-center gap-2 text-xs text-faro-text">
-                  <span className={`h-3 w-3 rounded-full ${COLOR_DOT[color]}`} />
-                  <span>{COLOR_LABEL[color]}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-2 text-xs text-faro-text">
+                <span className="h-3 w-3 rounded bg-emerald-400" />
+                <span>Tomado</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-faro-text">
+                <span className="h-3 w-3 rounded bg-sky-400" />
+                <span>Pagado</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-faro-text">
+                <span className="h-3 w-3 rounded bg-slate-400/40" />
+                <span>Pendiente</span>
+              </div>
               <div className="flex items-center gap-2 text-xs text-faro-text">
                 <span className="h-3 w-3 rounded-full bg-red-500/20 ring-1 ring-red-400" />
                 <span>Conflicto de grupo</span>
               </div>
+            </div>
+            <p className="mt-3 mb-1 text-xs text-faro-text/60">Punto superior: arrastre</p>
+            <div className="flex flex-wrap gap-2">
+              {(["verde", "ambar", "rojo", "gris"] as VacEstadoColor[]).map((color) => (
+                <span
+                  key={color}
+                  title={COLOR_LABEL[color]}
+                  className={`h-2.5 w-2.5 rounded-full ${COLOR_DOT[color]}`}
+                />
+              ))}
             </div>
           </div>
 

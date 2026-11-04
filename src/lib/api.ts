@@ -2,7 +2,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
 import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
-import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo } from "./types";
+import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo, VacLicencia } from "./types";
 
 let authToken: string | null = null;
 
@@ -570,6 +570,16 @@ export const api = {
         {},
         ADMIN_API_BASE
       ),
+    agregarDiaTomado: (body: {
+      usuarioId: number;
+      fechaDesde: string;
+      fechaHasta: string;
+      comentarios?: string;
+    }) =>
+      request<VacLicencia>("/vacaciones/dias-tomados", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }, ADMIN_API_BASE),
     actualizarLicencia: (id: number, body: Record<string, unknown>) =>
       request<VacLicenciaOverrideResponse>(`/vacaciones/licencias/${id}`, { method: "PATCH", body: JSON.stringify(body) }, ADMIN_API_BASE),
     conflictos: (gestion: number) =>

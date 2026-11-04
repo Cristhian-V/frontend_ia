@@ -189,6 +189,7 @@ export interface Entidad {
 
 
 export type VacEstadoColor = "verde" | "ambar" | "rojo" | "gris";
+export type VacCeldaEstado = "tomado" | "pagado" | "pendiente";
 
 export interface VacAntiguedad {
   anios: number;
@@ -258,6 +259,7 @@ export interface VacBloque {
   estadoColor: VacEstadoColor;
   categoriaColor: string;
   conflicto: boolean;
+  celdas: VacCeldaEstado[];
 }
 
 export interface VacPlanEstado {
@@ -332,6 +334,7 @@ export interface VacDiasTomados {
   gestion: number;
   licencias: VacLicencia[];
   total: number;
+  feriados: VacFeriado[];
 }
 
 export interface VacCandidato {

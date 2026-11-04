@@ -6,8 +6,27 @@ import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { EmptyState } from "@/components/EmptyState";
-import type { VacDiasTomados } from "@/lib/types";
-import { CalendarDays, RefreshCw } from "lucide-react";
+import type { VacDiasTomados, VacFuncionario } from "@/lib/types";
+import { CalendarDays, Plus, RefreshCw } from "lucide-react";
+
+
+function contarDiasHabilesLocal(
+  desde: string,
+  hasta: string,
+  feriados: VacDiasTomados["feriados"]
+) {
+  if (!desde || !hasta || hasta < desde) return 0;
+  const off = new Set(feriados.filter((f) => f.descuenta).map((f) => f.fecha));
+  let count = 0;
+  let current = new Date(`${desde}T00:00:00Z`);
+  const end = new Date(`${hasta}T00:00:00Z`);
+  while (current <= end) {
+    const iso = current.toISOString().slice(0, 10);
+    if (current.getUTCDay() !== 0 && !off.has(iso)) count++;
+    current = new Date(current.getTime() + 86400000);
+  }
+  return count;
+}
 
 export default function DiasTomadosPage() {
   const { user } = useAuth();
@@ -21,6 +40,16 @@ export default function DiasTomadosPage() {
   const [message, setMessage] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({
+    usuarioId: "",
+    fechaDesde: "",
+    fechaHasta: "",
+    comentarios: "",
+  });
+  const [funcionarios, setFuncionarios] = useState<VacFuncionario[]>([]);
+  const [addError, setAddError] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,6 +68,53 @@ export default function DiasTomadosPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  const openAdd = async () => {
+    setAddForm({ usuarioId: "", fechaDesde: "", fechaHasta: "", comentarios: "" });
+    setAddError("");
+    setShowAdd(true);
+    try {
+      setFuncionarios(await api.vacaciones.funcionarios(gestion));
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Error al cargar funcionarios");
+    }
+  };
+
+  const saveAdd = async () => {
+    setAddError("");
+    if (!addForm.usuarioId) {
+      setAddError("Selecciona un funcionario.");
+      return;
+    }
+    if (!addForm.fechaDesde || !addForm.fechaHasta) {
+      setAddError("Completa las fechas desde y hasta.");
+      return;
+    }
+    if (addForm.fechaHasta < addForm.fechaDesde) {
+      setAddError("La fecha hasta no puede ser anterior a la fecha desde.");
+      return;
+    }
+    if (Number(addForm.fechaDesde.slice(0, 4)) !== gestion) {
+      setAddError("La fecha desde debe ser del anio de la gestion seleccionada.");
+      return;
+    }
+    setAdding(true);
+    try {
+      const created = await api.vacaciones.agregarDiaTomado({
+        usuarioId: Number(addForm.usuarioId),
+        fechaDesde: addForm.fechaDesde,
+        fechaHasta: addForm.fechaHasta,
+        comentarios: addForm.comentarios,
+      });
+      setShowAdd(false);
+      setMessage(`Licencia agregada: ${created.diasCalculados} dias.`);
+      await load();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Error al agregar la licencia");
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const saveOverride = async (id: number, value: string) => {
     setSavingId(id);
@@ -91,6 +167,15 @@ export default function DiasTomadosPage() {
               </option>
             ))}
           </select>
+          {isAdmin && (
+            <button
+              onClick={openAdd}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+            >
+              <Plus className="h-4 w-4" />
+              Agregar dias tomados
+            </button>
+          )}
           <button
             onClick={load}
             disabled={loading}
@@ -210,6 +295,100 @@ export default function DiasTomadosPage() {
         Los días se calculan de lunes a sábado, excluyendo domingos y feriados configurados. Podés ajustar
         manualmente para medias jornadas o retornos anticipados.
       </p>
+
+      {showAdd && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowAdd(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border border-faro-border bg-faro-surface p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-1 text-lg font-semibold text-faro-textlight">Agregar dias tomados</h3>
+            <p className="mb-4 text-xs text-faro-text/60">
+              Se insertara una licencia de vacaciones activa en Integgre.
+            </p>
+            {addError && <ErrorBanner message={addError} />}
+            <div className="space-y-3">
+              <label className="block text-xs text-faro-text">
+                Funcionario
+                <select
+                  value={addForm.usuarioId}
+                  onChange={(e) => setAddForm((f) => ({ ...f, usuarioId: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-faro-border bg-faro-surface px-3 py-2 text-sm text-faro-text"
+                >
+                  <option value="">Seleccionar...</option>
+                  {funcionarios.map((f) => (
+                    <option key={f.usuarioId} value={f.usuarioId}>
+                      {f.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-xs text-faro-text">
+                  Desde
+                  <input
+                    type="date"
+                    value={addForm.fechaDesde}
+                    onChange={(e) => setAddForm((f) => ({ ...f, fechaDesde: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-faro-border bg-faro-surface px-3 py-2 text-sm text-faro-text"
+                  />
+                </label>
+                <label className="block text-xs text-faro-text">
+                  Hasta
+                  <input
+                    type="date"
+                    value={addForm.fechaHasta}
+                    onChange={(e) => setAddForm((f) => ({ ...f, fechaHasta: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-faro-border bg-faro-surface px-3 py-2 text-sm text-faro-text"
+                  />
+                </label>
+              </div>
+              <div className="rounded-lg bg-black/5 px-3 py-2 text-xs text-faro-text">
+                Dias habiles:{" "}
+                <span className="font-semibold text-faro-textlight">
+                  {contarDiasHabilesLocal(
+                    addForm.fechaDesde,
+                    addForm.fechaHasta,
+                    data?.feriados ?? []
+                  )}
+                </span>
+              </div>
+              <label className="block text-xs text-faro-text">
+                Comentario
+                <input
+                  value={addForm.comentarios}
+                  maxLength={300}
+                  onChange={(e) => setAddForm((f) => ({ ...f, comentarios: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-faro-border bg-faro-surface px-3 py-2 text-sm text-faro-text"
+                  placeholder="Opcional"
+                />
+                <span className="mt-1 block text-right text-[10px] text-faro-text/50">
+                  {addForm.comentarios.length}/300
+                </span>
+              </label>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setShowAdd(false)}
+                disabled={adding}
+                className="rounded-lg border border-faro-border px-3 py-2 text-sm text-faro-text hover:bg-white/5 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveAdd}
+                disabled={adding}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                {adding ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
