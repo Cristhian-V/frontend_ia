@@ -415,3 +415,44 @@ export interface VacLicenciaOverrideResponse {
   incluida: boolean;
   notas: string | null;
 }
+
+export interface IvaExencionCore {
+  id: number;
+  decreto: string;
+  vigente_desde: string;
+  vigente_hasta: string | null;
+  observacion: string | null;
+  activo: boolean;
+}
+
+export type IvaExencionEstado = "vigente" | "vencido" | "futuro" | "inactivo";
+
+export interface IvaExencion extends IvaExencionCore {
+  partidas: number;
+  estado: IvaExencionEstado;
+}
+
+export interface IvaExencionPartida {
+  partida_arancel: string;
+  descripcion: string;
+}
+
+export interface IvaExencionDetalle extends IvaExencionCore {
+  estado: IvaExencionEstado;
+  partidas: IvaExencionPartida[];
+}
+
+export interface ArancelPartida {
+  codigo: string;
+  descripcion: string;
+  ga_porcentaje: string | null;
+  ga_reducido: string | null;
+  iva: string | null;
+}
+
+export interface IvaExencionImportResult {
+  leidas: number;
+  agregadas: number;
+  yaExistian: number;
+  invalidas: number;
+}

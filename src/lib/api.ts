@@ -3,6 +3,7 @@ const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhos
 
 import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
 import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo, VacLicencia } from "./types";
+import type { IvaExencion, IvaExencionCore, IvaExencionDetalle, IvaExencionImportResult, ArancelPartida } from "./types";
 
 let authToken: string | null = null;
 
@@ -411,6 +412,69 @@ export const api = {
         { method: "POST", body: JSON.stringify({ codigo_sap: codigoSap, partida_arancel: partidaArancel }) },
         ADMIN_API_BASE
       ),
+    exenciones: {
+      list: () => request<IvaExencion[]>("/admin-finning/exenciones", {}, ADMIN_API_BASE),
+      get: (id: number) =>
+        request<IvaExencionDetalle>(`/admin-finning/exenciones/${id}`, {}, ADMIN_API_BASE),
+      create: (body: {
+        decreto: string;
+        vigente_desde: string;
+        vigente_hasta: string | null;
+        observacion?: string | null;
+        activo?: boolean;
+      }) =>
+        request<IvaExencionCore>(
+          "/admin-finning/exenciones",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      update: (id: number, body: {
+        decreto: string;
+        vigente_desde: string;
+        vigente_hasta: string | null;
+        observacion?: string | null;
+        activo?: boolean;
+      }) =>
+        request<IvaExencionCore>(
+          `/admin-finning/exenciones/${id}`,
+          { method: "PUT", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      remove: (id: number) =>
+        request<{ detail: string }>(
+          `/admin-finning/exenciones/${id}`,
+          { method: "DELETE" },
+          ADMIN_API_BASE
+        ),
+      setPartidas: (id: number, partidas: string[]) =>
+        request<{ total: number }>(
+          `/admin-finning/exenciones/${id}/partidas`,
+          { method: "PUT", body: JSON.stringify({ partidas }) },
+          ADMIN_API_BASE
+        ),
+      buscarArancel: (q: string) =>
+        request<ArancelPartida[]>(
+          `/admin-finning/arancel?q=${encodeURIComponent(q)}`,
+          {},
+          ADMIN_API_BASE
+        ),
+      importarPartidas: (id: number, file: File) => {
+        const formData = new FormData();
+        formData.append("excel", file);
+        return fetch(`${ADMIN_API_BASE}/admin-finning/exenciones/${id}/importar-partidas`, {
+          method: "POST",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+          body: formData,
+        }).then((r) => {
+          if (!r.ok) {
+            return r.json().then((d) => {
+              throw new Error(d.detail || "Error al importar las partidas");
+            });
+          }
+          return r.json() as Promise<IvaExencionImportResult>;
+        });
+      },
+    },
   },
   control: {
     suma: {

@@ -24,6 +24,7 @@ import {
   CalendarDays,
   CalendarRange,
   CalendarCheck,
+  Percent,
 } from "lucide-react";
 import { TOOL_KEYS, TOOL_LABELS, ROLES } from "./tools";
 import type { User } from "./types";
@@ -86,6 +87,7 @@ export const allSections: NavSection[] = [
     icon: ShieldAlert,
     items: [
       { label: "Validación de aranceles", href: "/dashboard/admin-finning/validacion-aranceles", icon: ShieldAlert },
+      { label: "Excepción de IVA", href: "/dashboard/admin-finning/exencion-iva", icon: Percent },
     ],
   },
   {
