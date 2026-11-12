@@ -92,7 +92,78 @@ export interface TransbelSincPendiente {
   canal: string;
   completo: boolean;
   motivo: string;
+  motivos?: string[];
+  procesable?: boolean;
   record: TransbelRecord;
+}
+
+export type TransbelIncompleto = TransbelSincPendiente;
+
+export interface TransbelExcepcion {
+  operacionId: number;
+  cliente: string;
+  patron: string;
+  nroDui: string;
+  nroEmbarque: string;
+  imagen: string;
+  recinto: string;
+  referenciaCliente: string;
+  tipoTransporteId: string;
+  transporte: string;
+  fechaPaseSalida: string | null;
+  fechaValidacion: string | null;
+  pagoTributos: string | null;
+  fechaLevante: string | null;
+  diferencia: number | null;
+  excepcionId: string | null;
+  causaGlobal: string;
+  causaPuntual: string;
+  responsable: string;
+  ajustable: string;
+  requiereEx: string;
+  usuario: string;
+  asignadoId: number;
+  asignado: string | null;
+  fechaSync: string | null;
+  fechaReg: string | null;
+}
+
+export interface TransbelExcepcionCatalogo {
+  excepcionId: string;
+  causaGlobal: string;
+  causaPuntual: string;
+  responsable: string;
+  ajustable: string;
+}
+
+export interface TransbelProcesarResult {
+  procesadas: number;
+  ok: number;
+  fallidas: number;
+  noProcesables: { operacionId: number; motivo: string }[];
+  results: {
+    operacionId: number;
+    ok: boolean;
+    nroRegistro?: string;
+    error?: string;
+    completo: boolean;
+    motivo: string;
+  }[];
+}
+
+export interface TransbelProcesarPendienteResult {
+  operacionId: number;
+  enviados: number;
+  yaEnviado: boolean;
+  estadoId: string;
+  finalizado: boolean;
+  yaFinalizado: boolean;
+}
+
+export interface TransbelReferenciaResult {
+  operacionId: number;
+  referenciaCliente: string;
+  anterior: string | null;
 }
 
 export interface ControlOperacion {

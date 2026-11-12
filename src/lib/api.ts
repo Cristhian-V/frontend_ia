@@ -1,7 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
-import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
+import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, TransbelExcepcion, TransbelExcepcionCatalogo, TransbelIncompleto, TransbelProcesarResult, TransbelProcesarPendienteResult, TransbelReferenciaResult, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
 import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo, VacLicencia } from "./types";
 import type { IvaExencion, IvaExencionCore, IvaExencionDetalle, IvaExencionImportResult, ArancelPartida } from "./types";
 
@@ -297,6 +297,53 @@ export const api = {
         ),
     },
 
+    excepciones: {
+      pendientes: () =>
+        request<{ total: number; pendientes: TransbelExcepcion[] }>(
+          "/transbel/excepciones/pendientes",
+          {},
+          ADMIN_API_BASE
+        ),
+      historial: () =>
+        request<{ total: number; pendientes: TransbelExcepcion[] }>(
+          "/transbel/excepciones/historial",
+          {},
+          ADMIN_API_BASE
+        ),
+      catalogo: () =>
+        request<{ total: number; catalogo: TransbelExcepcionCatalogo[] }>(
+          "/transbel/excepciones/catalogo",
+          {},
+          ADMIN_API_BASE
+        ),
+      asignar: (body: { operacionId: number; excepcionId: string }) =>
+        request<{
+          operacionId: number;
+          excepcionId: string;
+          accion: string;
+          estadoId: string;
+        }>(
+          "/transbel/excepciones",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      procesar: (body: { operacionId: number }) =>
+        request<TransbelProcesarPendienteResult>(
+          "/transbel/excepciones/procesar",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      actualizarReferencia: (body: {
+        operacionId: number;
+        referenciaCliente: string;
+      }) =>
+        request<TransbelReferenciaResult>(
+          "/transbel/excepciones/referencia",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+    },
+
     sincronizacion: {
       pendientes: (limit = 200) =>
         request<{ total: number; completos: number; pendientes: TransbelSincPendiente[] }>(
@@ -307,6 +354,18 @@ export const api = {
       enviar: (operacionIds?: number[]) =>
         request<{ enviados: number; omitidos: number; operaciones: number[]; detalle?: string }>(
           "/transbel/sincronizacion/enviar",
+          { method: "POST", body: JSON.stringify({ operacionIds }) },
+          ADMIN_API_BASE
+        ),
+      incompletos: (limit = 500) =>
+        request<{ total: number; pendientes: TransbelIncompleto[] }>(
+          `/transbel/sincronizacion/incompletos?limit=${limit}`,
+          {},
+          ADMIN_API_BASE
+        ),
+      procesar: (operacionIds: number[]) =>
+        request<TransbelProcesarResult>(
+          "/transbel/sincronizacion/procesar",
           { method: "POST", body: JSON.stringify({ operacionIds }) },
           ADMIN_API_BASE
         ),

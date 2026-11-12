@@ -33,6 +33,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  adminOnly?: boolean;
 }
 
 export interface NavSection {
@@ -71,6 +72,12 @@ export const allSections: NavSection[] = [
     items: [
       { label: "Clasificador Arancelario", href: "/dashboard/transbel/clasificador", icon: Tag },
       { label: "Sincronización 3PL", href: "/dashboard/transbel/sincronizacion", icon: RefreshCw },
+      {
+        label: "Alertas Pendientes",
+        href: "/dashboard/transbel/alertas",
+        icon: ClipboardList,
+        adminOnly: true,
+      },
     ],
   },
   {
@@ -121,7 +128,10 @@ export function buildNavSections(user: User | null): NavSection[] {
   const sections: NavSection[] = allSections
     .filter((s) => isAdmin || userToolKeys.has(s.key))
     .map((s) => {
-      const cloned = { ...s, items: [...s.items] };
+      const cloned = {
+        ...s,
+        items: s.items.filter((item) => isAdmin || !item.adminOnly),
+      };
 
       if (!isAdmin && s.key === TOOL_KEYS[0]) {
         const agenteTool = user.tools.find((t) => t.tool_key === TOOL_KEYS[0]);
