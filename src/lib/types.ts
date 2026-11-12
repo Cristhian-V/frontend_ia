@@ -158,12 +158,23 @@ export interface TransbelProcesarPendienteResult {
   estadoId: string;
   finalizado: boolean;
   yaFinalizado: boolean;
+  esAnticipadaIMA?: boolean;
 }
 
 export interface TransbelReferenciaResult {
   operacionId: number;
   referenciaCliente: string;
   anterior: string | null;
+}
+
+export interface TransbelIgnorarResult {
+  operacionId: number;
+  ignorado: boolean;
+}
+
+export interface TransbelRestaurarResult {
+  operacionId: number;
+  restaurado: boolean;
 }
 
 export interface ControlOperacion {

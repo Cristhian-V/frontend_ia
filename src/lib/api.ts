@@ -1,7 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
-import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, TransbelExcepcion, TransbelExcepcionCatalogo, TransbelIncompleto, TransbelProcesarResult, TransbelProcesarPendienteResult, TransbelReferenciaResult, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
+import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, TransbelExcepcion, TransbelExcepcionCatalogo, TransbelIncompleto, TransbelProcesarResult, TransbelProcesarPendienteResult, TransbelReferenciaResult, TransbelIgnorarResult, TransbelRestaurarResult, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
 import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo, VacLicencia } from "./types";
 import type { IvaExencion, IvaExencionCore, IvaExencionDetalle, IvaExencionImportResult, ArancelPartida } from "./types";
 
@@ -299,11 +299,12 @@ export const api = {
 
     excepciones: {
       pendientes: () =>
-        request<{ total: number; pendientes: TransbelExcepcion[] }>(
-          "/transbel/excepciones/pendientes",
-          {},
-          ADMIN_API_BASE
-        ),
+        request<{
+          total: number;
+          pendientes: TransbelExcepcion[];
+          totalIgnorados: number;
+          ignorados: TransbelExcepcion[];
+        }>("/transbel/excepciones/pendientes", {}, ADMIN_API_BASE),
       historial: () =>
         request<{ total: number; pendientes: TransbelExcepcion[] }>(
           "/transbel/excepciones/historial",
@@ -339,6 +340,18 @@ export const api = {
       }) =>
         request<TransbelReferenciaResult>(
           "/transbel/excepciones/referencia",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      ignorar: (body: { operacionId: number; motivo?: string }) =>
+        request<TransbelIgnorarResult>(
+          "/transbel/excepciones/ignorar",
+          { method: "POST", body: JSON.stringify(body) },
+          ADMIN_API_BASE
+        ),
+      restaurar: (body: { operacionId: number }) =>
+        request<TransbelRestaurarResult>(
+          "/transbel/excepciones/restaurar",
           { method: "POST", body: JSON.stringify(body) },
           ADMIN_API_BASE
         ),

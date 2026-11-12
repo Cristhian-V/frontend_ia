@@ -16,13 +16,15 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  EyeOff,
   Pencil,
   Play,
   RefreshCw,
+  RotateCcw,
   ShieldAlert,
 } from "lucide-react";
 
-type Tab = "pendientes" | "historial" | "incompletos";
+type Tab = "pendientes" | "historial" | "incompletos" | "ignorados";
 
 const PAGE_SIZE = 100;
 
@@ -44,6 +46,10 @@ function isValidReferencia(value: string | null | undefined) {
 function extractReferencia(value: string | null | undefined) {
   const match = String(value || "").match(/180\d{6}/);
   return match ? match[0] : "";
+}
+
+function isAnticipadaIMA(patron: string | null | undefined) {
+  return /^IMA\b/i.test(String(patron || "").trim());
 }
 
 function ReferenciaCell({
@@ -154,6 +160,7 @@ export default function AlertasPendientesPage() {
   const [pendientes, setPendientes] = useState<TransbelExcepcion[]>([]);
   const [historial, setHistorial] = useState<TransbelExcepcion[]>([]);
   const [incompletos, setIncompletos] = useState<TransbelIncompleto[]>([]);
+  const [ignorados, setIgnorados] = useState<TransbelExcepcion[]>([]);
   const [catalogo, setCatalogo] = useState<TransbelExcepcionCatalogo[]>([]);
   const [selectedExc, setSelectedExc] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -164,6 +171,8 @@ export default function AlertasPendientesPage() {
   const [procesandoPendiente, setProcesandoPendiente] = useState<number | null>(
     null
   );
+  const [ignorando, setIgnorando] = useState<number | null>(null);
+  const [restaurando, setRestaurando] = useState<number | null>(null);
   const [procesando, setProcesando] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -181,6 +190,7 @@ export default function AlertasPendientesPage() {
       setHistorial(h.pendientes);
       setCatalogo(c.catalogo);
       setIncompletos(inc.pendientes);
+      setIgnorados(p.ignorados);
       const current: Record<number, string> = {};
       for (const row of p.pendientes) {
         if (row.excepcionId) current[row.operacionId] = row.excepcionId;
@@ -277,8 +287,58 @@ export default function AlertasPendientesPage() {
     }
   };
 
+  const ignorePendiente = async (row: TransbelExcepcion) => {
+    setIgnorando(row.operacionId);
+    setError("");
+    setMessage("");
+    try {
+      await api.transbel.excepciones.ignorar({
+        operacionId: row.operacionId,
+      });
+      setMessage(
+        `Operación ${row.operacionId} ignorada. Ya no se procesará desde Hermes.`
+      );
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al ignorar la operación"
+      );
+    } finally {
+      setIgnorando(null);
+    }
+  };
+
+  const restorePendiente = async (row: TransbelExcepcion) => {
+    setRestaurando(row.operacionId);
+    setError("");
+    setMessage("");
+    try {
+      const result = await api.transbel.excepciones.restaurar({
+        operacionId: row.operacionId,
+      });
+      setMessage(
+        result.restaurado
+          ? `Operación ${row.operacionId} restaurada a Pendientes.`
+          : `La operación ${row.operacionId} no estaba ignorada.`
+      );
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al restaurar la operación"
+      );
+    } finally {
+      setRestaurando(null);
+    }
+  };
+
   const processPendiente = async (row: TransbelExcepcion) => {
-    if (row.diferencia != null && row.diferencia > 3 && !row.excepcionId) {
+    const esIMA = isAnticipadaIMA(row.patron);
+    if (
+      !esIMA &&
+      row.diferencia != null &&
+      row.diferencia > 3 &&
+      !row.excepcionId
+    ) {
       setError(
         "Debe asignar una excepción antes de procesar esta operación (más de 3 días)."
       );
@@ -294,7 +354,11 @@ export default function AlertasPendientesPage() {
       setMessage(
         result.yaEnviado
           ? `La operación ${row.operacionId} ya estaba enviada; su excepción fue finalizada.`
-          : `Operación ${row.operacionId} procesada y finalizada (${result.enviados} envío(s)).`
+          : `Operación ${row.operacionId} procesada y finalizada (${
+              result.enviados
+            } envío(s))${
+              result.esAnticipadaIMA ? " · IMA anticipada" : ""
+            }.`
       );
       await load();
     } catch (err) {
@@ -348,13 +412,16 @@ export default function AlertasPendientesPage() {
       ? pendientes.length
       : tab === "historial"
         ? historial.length
-        : incompletos.length;
+        : tab === "incompletos"
+          ? incompletos.length
+          : ignorados.length;
   const totalPages = Math.max(1, Math.ceil(activeLength / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * PAGE_SIZE;
   const pendientesPage = pendientes.slice(start, start + PAGE_SIZE);
   const historialPage = historial.slice(start, start + PAGE_SIZE);
   const incompletosPage = incompletos.slice(start, start + PAGE_SIZE);
+  const ignoradosPage = ignorados.slice(start, start + PAGE_SIZE);
   const selectedProcessable = incompletos.filter(
     (row) => row.procesable && selected.has(row.operacionId)
   );
@@ -403,6 +470,7 @@ export default function AlertasPendientesPage() {
         {card("pendientes", "Excepciones pendientes", pendientes.length)}
         {card("historial", "Historial", historial.length)}
         {card("incompletos", "Datos incompletos 3PL", incompletos.length)}
+        {card("ignorados", "Ignorados", ignorados.length)}
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -412,7 +480,9 @@ export default function AlertasPendientesPage() {
             ? "Operaciones que necesitan una excepción"
             : tab === "historial"
               ? "Excepciones finalizadas"
-              : "Operaciones sin datos CLICK completos"}
+              : tab === "incompletos"
+                ? "Operaciones sin datos CLICK completos"
+                : "Operaciones ignoradas manualmente; no se procesarán desde Hermes"}
         </span>
         {tab === "incompletos" && (
           <button
@@ -459,12 +529,25 @@ export default function AlertasPendientesPage() {
               <tbody>
                 {pendientesPage.map((row) => {
                   const current = selectedExc[row.operacionId] || "";
+                  const esIMA = isAnticipadaIMA(row.patron);
+                  const requiresExc =
+                    !esIMA &&
+                    row.diferencia != null &&
+                    row.diferencia > 3 &&
+                    !row.excepcionId;
                   return (
                     <tr key={row.operacionId} className="border-t border-faro-border">
                       <td className="px-3 py-2 font-mono">{row.operacionId}</td>
                       <td className="px-3 py-2">{dash(row.usuario)}</td>
                       <td className="px-3 py-2">{dash(row.cliente)}</td>
-                      <td className="px-3 py-2">{dash(row.patron)}</td>
+                      <td className="px-3 py-2">
+                        {dash(row.patron)}
+                        {esIMA && (
+                          <span className="ml-1 rounded bg-cyan-500/15 px-1.5 py-0.5 text-[10px] font-medium text-cyan-300">
+                            IMA anticipada
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2">{dash(row.transporte)}</td>
                       <td className="px-3 py-2">{dash(row.recinto)}</td>
                       <td className="px-3 py-2 font-mono">{dash(row.nroEmbarque)}</td>
@@ -536,9 +619,7 @@ export default function AlertasPendientesPage() {
                             <button
                               onClick={() => processPendiente(row)}
                               disabled={
-                                (row.diferencia != null &&
-                                  row.diferencia > 3 &&
-                                  !row.excepcionId) ||
+                                requiresExc ||
                                 procesandoPendiente === row.operacionId ||
                                 asignando === row.operacionId
                               }
@@ -547,13 +628,29 @@ export default function AlertasPendientesPage() {
                               <Play className="h-3 w-3" />
                               Procesar
                             </button>
-                            {row.diferencia != null &&
-                              row.diferencia > 3 &&
-                              !row.excepcionId && (
-                                <span className="text-[11px] text-yellow-300">
-                                  Requiere excepción (&gt;3 días)
-                                </span>
-                              )}
+                            <button
+                              onClick={() => ignorePendiente(row)}
+                              disabled={
+                                ignorando === row.operacionId ||
+                                procesandoPendiente === row.operacionId ||
+                                asignando === row.operacionId
+                              }
+                              className={`${buttonSecondary} px-2 py-1 text-xs`}
+                              title="Ignorar: ya fue procesada por fuera"
+                            >
+                              <EyeOff className="h-3 w-3" />
+                              Ignorar
+                            </button>
+                            {requiresExc && (
+                              <span className="text-[11px] text-yellow-300">
+                                Requiere excepción (&gt;3 días)
+                              </span>
+                            )}
+                            {esIMA && (
+                              <span className="text-[11px] text-cyan-400">
+                                Procesa sin importar los días
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -698,6 +795,72 @@ export default function AlertasPendientesPage() {
               </tbody>
             </table>
           )}
+
+          {tab === "ignorados" && (
+            <table className="w-full min-w-[1050px] text-left text-xs">
+              <thead className="border-b border-faro-border text-faro-text/60">
+                <tr>
+                  <th className="px-3 py-2">Operación</th>
+                  <th className="px-3 py-2">Patrón</th>
+                  <th className="px-3 py-2">Referencia</th>
+                  <th className="px-3 py-2">Canal</th>
+                  <th className="px-3 py-2">Días</th>
+                  <th className="px-3 py-2">Excepción</th>
+                  <th className="px-3 py-2">Restaurar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ignoradosPage.map((row) => (
+                  <tr key={row.operacionId} className="border-t border-faro-border">
+                    <td className="px-3 py-2 font-mono">{row.operacionId}</td>
+                    <td className="px-3 py-2">{dash(row.patron)}</td>
+                    <td className="px-3 py-2">
+                      <ReferenciaCell
+                        operacionId={row.operacionId}
+                        value={row.referenciaCliente}
+                        onSave={saveReferencia}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <CanalBadge canal={row.imagen} />
+                    </td>
+                    <td className="px-3 py-2">
+                      {row.diferencia == null ? "—" : `${row.diferencia} d`}
+                    </td>
+                    <td className="px-3 py-2">
+                      {row.excepcionId ? (
+                        <span className="font-mono text-faro-textlight">
+                          {row.excepcionId}
+                        </span>
+                      ) : (
+                        <span className="text-yellow-300">Sin excepción</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => restorePendiente(row)}
+                        disabled={restaurando === row.operacionId}
+                        className={`${buttonSecondary} px-2 py-1 text-xs`}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Restaurar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {ignoradosPage.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-3 py-8 text-center text-faro-text/60"
+                    >
+                      No hay operaciones ignoradas.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -729,11 +892,14 @@ export default function AlertasPendientesPage() {
         <span className="font-mono"> core.transbel_excepciones</span>. En
         Pendientes, las operaciones con más de 3 días requieren una excepción
         asignada para poder procesarse; con 3 días o menos el botón Procesar se
-        habilita. La referencia de cliente debe ser un número de 9 dígitos que
+        habilita. Las operaciones <span className="text-cyan-300">IMA anticipadas</span>{" "}
+        se procesan sin importar los días. La referencia de cliente debe ser un número de 9 dígitos que
         comienza con 180; si aparece en{" "}
         <span className="text-red-400">rojo</span>, usá el lápiz para corregirla.
         Las filas en <span className="text-yellow-300">amarillo</span> de datos
-        incompletos no se pueden procesar automáticamente.
+        incompletos no se pueden procesar automáticamente. Ignorar oculta la
+        operación de Pendientes y de la sincronización 3PL; podés restaurarla
+        desde la pestaña Ignorados.
       </p>
     </div>
   );
