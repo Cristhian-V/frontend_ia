@@ -70,35 +70,6 @@ export interface OperacionXml {
   FechaMod: string | null;
 }
 
-export interface TransbelRecord {
-  ENTREGA: string;
-  FLIBER: string;
-  FULTDOC: string;
-  FNACIONAL: string;
-  FETLAA: string;
-  CODEXC_AA: string;
-  FETL_TL: string;
-  FENTCDP: string;
-  CODEXC_TL: string;
-}
-
-export interface TransbelSincPendiente {
-  operacionId: number;
-  entrega: string;
-  nroRegistro: string;
-  gestion: number;
-  recinto: number;
-  nroDui: string;
-  canal: string;
-  completo: boolean;
-  motivo: string;
-  motivos?: string[];
-  procesable?: boolean;
-  record: TransbelRecord;
-}
-
-export type TransbelIncompleto = TransbelSincPendiente;
-
 export interface TransbelExcepcion {
   operacionId: number;
   cliente: string;
@@ -136,25 +107,8 @@ export interface TransbelExcepcionCatalogo {
   ajustable: string;
 }
 
-export interface TransbelProcesarResult {
-  procesadas: number;
-  ok: number;
-  fallidas: number;
-  noProcesables: { operacionId: number; motivo: string }[];
-  results: {
-    operacionId: number;
-    ok: boolean;
-    nroRegistro?: string;
-    error?: string;
-    completo: boolean;
-    motivo: string;
-  }[];
-}
-
 export interface TransbelProcesarPendienteResult {
   operacionId: number;
-  enviados: number;
-  yaEnviado: boolean;
   estadoId: string;
   finalizado: boolean;
   yaFinalizado: boolean;

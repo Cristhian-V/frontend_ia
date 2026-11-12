@@ -16,7 +16,6 @@ import {
   ShieldAlert,
   Settings,
   Users,
-  RefreshCw,
   ClipboardList,
   FileSpreadsheet,
   BookOpen,
@@ -71,7 +70,6 @@ export const allSections: NavSection[] = [
     icon: Package,
     items: [
       { label: "Clasificador Arancelario", href: "/dashboard/transbel/clasificador", icon: Tag },
-      { label: "Sincronización 3PL", href: "/dashboard/transbel/sincronizacion", icon: RefreshCw },
       {
         label: "Alertas Pendientes",
         href: "/dashboard/transbel/alertas",

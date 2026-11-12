@@ -1,7 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const ADMIN_API_BASE = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:4000";
 
-import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelSincPendiente, TransbelExcepcion, TransbelExcepcionCatalogo, TransbelIncompleto, TransbelProcesarResult, TransbelProcesarPendienteResult, TransbelReferenciaResult, TransbelIgnorarResult, TransbelRestaurarResult, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
+import type { User, ToolEntry, Progress, Doc, Chunk, TipoCambio, OperacionXml, Entidad, TransbelExcepcion, TransbelExcepcionCatalogo, TransbelProcesarPendienteResult, TransbelReferenciaResult, TransbelIgnorarResult, TransbelRestaurarResult, ControlOperacion, ControlResultadoRow, ControlImportSummary, ControlClicProgress } from "./types";
 import type { VacFuncionario, VacCandidato, VacCronograma, VacPlanEstado, VacBloque, VacDiasTomados, VacGrupo, VacConflicto, VacFeriado, VacImportPreview, VacImportResult, VacAjuste, VacLicenciaOverrideResponse, VacCategoria, VacRecalculo, VacLicencia } from "./types";
 import type { IvaExencion, IvaExencionCore, IvaExencionDetalle, IvaExencionImportResult, ArancelPartida } from "./types";
 
@@ -282,21 +282,6 @@ export const api = {
         xhr.send(formData);
       }),
 
-    click: {
-      pendientes: (limit = 100) =>
-        request<{ total: number; operaciones: Record<string, unknown>[] }>(
-          `/transbel/click/pendientes?limit=${limit}`,
-          {},
-          ADMIN_API_BASE
-        ),
-      backfill: (body: { limit?: number; dryRun?: boolean }) =>
-        request<Record<string, unknown>>(
-          "/transbel/click/backfill",
-          { method: "POST", body: JSON.stringify(body) },
-          ADMIN_API_BASE
-        ),
-    },
-
     excepciones: {
       pendientes: () =>
         request<{
@@ -357,32 +342,6 @@ export const api = {
         ),
     },
 
-    sincronizacion: {
-      pendientes: (limit = 200) =>
-        request<{ total: number; completos: number; pendientes: TransbelSincPendiente[] }>(
-          `/transbel/sincronizacion/pendientes?limit=${limit}`,
-          {},
-          ADMIN_API_BASE
-        ),
-      enviar: (operacionIds?: number[]) =>
-        request<{ enviados: number; omitidos: number; operaciones: number[]; detalle?: string }>(
-          "/transbel/sincronizacion/enviar",
-          { method: "POST", body: JSON.stringify({ operacionIds }) },
-          ADMIN_API_BASE
-        ),
-      incompletos: (limit = 500) =>
-        request<{ total: number; pendientes: TransbelIncompleto[] }>(
-          `/transbel/sincronizacion/incompletos?limit=${limit}`,
-          {},
-          ADMIN_API_BASE
-        ),
-      procesar: (operacionIds: number[]) =>
-        request<TransbelProcesarResult>(
-          "/transbel/sincronizacion/procesar",
-          { method: "POST", body: JSON.stringify({ operacionIds }) },
-          ADMIN_API_BASE
-        ),
-    },
   },
   fnning: {
     list: (page = 1, size = 30) =>

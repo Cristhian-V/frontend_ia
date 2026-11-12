@@ -8,7 +8,6 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import type {
   TransbelExcepcion,
   TransbelExcepcionCatalogo,
-  TransbelIncompleto,
 } from "@/lib/types";
 import {
   AlertTriangle,
@@ -24,7 +23,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-type Tab = "pendientes" | "historial" | "incompletos" | "ignorados";
+type Tab = "pendientes" | "historial" | "ignorados";
 
 const PAGE_SIZE = 100;
 
@@ -159,11 +158,9 @@ export default function AlertasPendientesPage() {
   const [tab, setTab] = useState<Tab>("pendientes");
   const [pendientes, setPendientes] = useState<TransbelExcepcion[]>([]);
   const [historial, setHistorial] = useState<TransbelExcepcion[]>([]);
-  const [incompletos, setIncompletos] = useState<TransbelIncompleto[]>([]);
   const [ignorados, setIgnorados] = useState<TransbelExcepcion[]>([]);
   const [catalogo, setCatalogo] = useState<TransbelExcepcionCatalogo[]>([]);
   const [selectedExc, setSelectedExc] = useState<Record<number, string>>({});
-  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -173,36 +170,26 @@ export default function AlertasPendientesPage() {
   );
   const [ignorando, setIgnorando] = useState<number | null>(null);
   const [restaurando, setRestaurando] = useState<number | null>(null);
-  const [procesando, setProcesando] = useState(false);
   const [page, setPage] = useState(1);
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const [p, h, c, inc] = await Promise.all([
+      const [p, h, c] = await Promise.all([
         api.transbel.excepciones.pendientes(),
         api.transbel.excepciones.historial(),
         api.transbel.excepciones.catalogo(),
-        api.transbel.sincronizacion.incompletos(),
       ]);
       setPendientes(p.pendientes);
       setHistorial(h.pendientes);
       setCatalogo(c.catalogo);
-      setIncompletos(inc.pendientes);
       setIgnorados(p.ignorados);
       const current: Record<number, string> = {};
       for (const row of p.pendientes) {
         if (row.excepcionId) current[row.operacionId] = row.excepcionId;
       }
       setSelectedExc(current);
-      setSelected(
-        new Set(
-          inc.pendientes
-            .filter((row) => row.procesable)
-            .map((row) => row.operacionId)
-        )
-      );
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Error al cargar alertas pendientes"
@@ -352,13 +339,9 @@ export default function AlertasPendientesPage() {
         operacionId: row.operacionId,
       });
       setMessage(
-        result.yaEnviado
-          ? `La operación ${row.operacionId} ya estaba enviada; su excepción fue finalizada.`
-          : `Operación ${row.operacionId} procesada y finalizada (${
-              result.enviados
-            } envío(s))${
-              result.esAnticipadaIMA ? " · IMA anticipada" : ""
-            }.`
+        `Operación ${row.operacionId} procesada y finalizada${
+          result.esAnticipadaIMA ? " · IMA anticipada" : ""
+        }.`
       );
       await load();
     } catch (err) {
@@ -368,36 +351,6 @@ export default function AlertasPendientesPage() {
     } finally {
       setProcesandoPendiente(null);
     }
-  };
-
-  const process = async (ids: number[]) => {
-    if (ids.length === 0) return;
-    setProcesando(true);
-    setError("");
-    setMessage("");
-    try {
-      const result = await api.transbel.sincronizacion.procesar(ids);
-      const extra = result.noProcesables.length
-        ? ` No procesables: ${result.noProcesables.length}.`
-        : "";
-      setMessage(
-        `Procesadas ${result.procesadas}: ${result.ok} ok, ${result.fallidas} con error.${extra}`
-      );
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al procesar operaciones");
-    } finally {
-      setProcesando(false);
-    }
-  };
-
-  const toggle = (id: number) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   };
 
   const changeTab = (value: Tab) => {
@@ -412,19 +365,13 @@ export default function AlertasPendientesPage() {
       ? pendientes.length
       : tab === "historial"
         ? historial.length
-        : tab === "incompletos"
-          ? incompletos.length
-          : ignorados.length;
+        : ignorados.length;
   const totalPages = Math.max(1, Math.ceil(activeLength / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * PAGE_SIZE;
   const pendientesPage = pendientes.slice(start, start + PAGE_SIZE);
   const historialPage = historial.slice(start, start + PAGE_SIZE);
-  const incompletosPage = incompletos.slice(start, start + PAGE_SIZE);
   const ignoradosPage = ignorados.slice(start, start + PAGE_SIZE);
-  const selectedProcessable = incompletos.filter(
-    (row) => row.procesable && selected.has(row.operacionId)
-  );
 
   const card = (value: Tab, label: string, count: number) => (
     <button
@@ -447,11 +394,11 @@ export default function AlertasPendientesPage() {
     <div>
       <PageHeader
         title="Alertas Pendientes"
-        subtitle="TRANSBEL: operaciones con excepción pendiente y datos incompletos para sincronizar"
+        subtitle="TRANSBEL: operaciones con excepción pendiente o sin excepción"
       >
         <button
           onClick={load}
-          disabled={loading || procesando}
+          disabled={loading}
           className={buttonSecondary}
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -469,7 +416,6 @@ export default function AlertasPendientesPage() {
       <div className="mb-4 flex flex-wrap gap-3">
         {card("pendientes", "Excepciones pendientes", pendientes.length)}
         {card("historial", "Historial", historial.length)}
-        {card("incompletos", "Datos incompletos 3PL", incompletos.length)}
         {card("ignorados", "Ignorados", ignorados.length)}
       </div>
 
@@ -480,22 +426,8 @@ export default function AlertasPendientesPage() {
             ? "Operaciones que necesitan una excepción"
             : tab === "historial"
               ? "Excepciones finalizadas"
-              : tab === "incompletos"
-                ? "Operaciones sin datos CLICK completos"
-                : "Operaciones ignoradas manualmente; no se procesarán desde Hermes"}
+              : "Operaciones ignoradas manualmente; no se procesarán desde Hermes"}
         </span>
-        {tab === "incompletos" && (
-          <button
-            onClick={() =>
-              process(selectedProcessable.map((row) => row.operacionId))
-            }
-            disabled={procesando || selectedProcessable.length === 0}
-            className={`${buttonPrimary} ml-auto`}
-          >
-            <RefreshCw className={`h-4 w-4 ${procesando ? "animate-spin" : ""}`} />
-            Procesar seleccionados ({selectedProcessable.length})
-          </button>
-        )}
       </div>
 
       {loading ? (
@@ -722,80 +654,6 @@ export default function AlertasPendientesPage() {
             </table>
           )}
 
-          {tab === "incompletos" && (
-            <table className="w-full min-w-[1050px] text-left text-xs">
-              <thead className="border-b border-faro-border text-faro-text/60">
-                <tr>
-                  <th className="px-3 py-2"></th>
-                  <th className="px-3 py-2">Operación</th>
-                  <th className="px-3 py-2">ENTREGA</th>
-                  <th className="px-3 py-2">Nro. Registro</th>
-                  <th className="px-3 py-2">Gestión</th>
-                  <th className="px-3 py-2">Canal</th>
-                  <th className="px-3 py-2">Motivo</th>
-                  <th className="px-3 py-2">Procesar</th>
-                </tr>
-              </thead>
-              <tbody>
-                {incompletosPage.map((row) => (
-                  <tr
-                    key={row.operacionId}
-                    className={
-                      "border-t border-faro-border " +
-                      (row.procesable
-                        ? "text-faro-text"
-                        : "bg-yellow-500/10 text-yellow-200")
-                    }
-                  >
-                    <td className="px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(row.operacionId)}
-                        disabled={!row.procesable}
-                        onChange={() => toggle(row.operacionId)}
-                      />
-                    </td>
-                    <td className="px-3 py-2 font-mono">{row.operacionId}</td>
-                    <td className="px-3 py-2">
-                      <ReferenciaCell
-                        operacionId={row.operacionId}
-                        value={row.entrega}
-                        onSave={saveReferencia}
-                      />
-                    </td>
-                    <td className="px-3 py-2 font-mono">
-                      {dash(row.nroRegistro)}
-                    </td>
-                    <td className="px-3 py-2">{dash(String(row.gestion))}</td>
-                    <td className="px-3 py-2">
-                      <CanalBadge canal={row.canal} />
-                    </td>
-                    <td className="px-3 py-2">{dash(row.motivo)}</td>
-                    <td className="px-3 py-2">
-                      <button
-                        onClick={() => process([row.operacionId])}
-                        disabled={!row.procesable || procesando}
-                        className={`${buttonSecondary} px-2 py-1 text-xs`}
-                      >
-                        {row.procesable ? "Procesar" : "No procesable"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {incompletosPage.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-3 py-8 text-center text-faro-text/60"
-                    >
-                      No hay operaciones con datos incompletos.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-
           {tab === "ignorados" && (
             <table className="w-full min-w-[1050px] text-left text-xs">
               <thead className="border-b border-faro-border text-faro-text/60">
@@ -893,13 +751,11 @@ export default function AlertasPendientesPage() {
         Pendientes, las operaciones con más de 3 días requieren una excepción
         asignada para poder procesarse; con 3 días o menos el botón Procesar se
         habilita. Las operaciones <span className="text-cyan-300">IMA anticipadas</span>{" "}
-        se procesan sin importar los días. La referencia de cliente debe ser un número de 9 dígitos que
-        comienza con 180; si aparece en{" "}
+        se procesan sin importar los días. La referencia de cliente debe ser un
+        número de 9 dígitos que comienza con 180; si aparece en{" "}
         <span className="text-red-400">rojo</span>, usá el lápiz para corregirla.
-        Las filas en <span className="text-yellow-300">amarillo</span> de datos
-        incompletos no se pueden procesar automáticamente. Ignorar oculta la
-        operación de Pendientes y de la sincronización 3PL; podés restaurarla
-        desde la pestaña Ignorados.
+        Ignorar oculta la operación de Pendientes; podés restaurarla desde la
+        pestaña Ignorados.
       </p>
     </div>
   );
